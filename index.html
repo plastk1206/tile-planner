@@ -777,6 +777,26 @@ function shaftSegmentsOnWall(wallName){
   }
   return out;
 }
+// Returns the visible inward-facing faces of every shaft, each tileable like a
+// normal wall. A shaft has 4 footprint edges; the one shared with its primary
+// wall is hidden, and either side edge is hidden when the shaft sits at a
+// corner of that primary wall.
+function shaftVisibleFaces(){
+  const faces = [];
+  const eps = 0.5;
+  for(const s of state.shafts){
+    const wallLen = wallLengthOf(s.wall);
+    const atStart = s.offsetAlong < eps;
+    const atEnd = s.offsetAlong + s.lenAlong > wallLen - eps;
+    // Front face (parallel to the primary wall, length = lenAlong) — always visible
+    faces.push({shaftId:s.id, label:s.id+'·面', length:s.lenAlong, kind:'front'});
+    // Side at offsetAlong=0 end (perpendicular, length = depth) — hidden if at start corner
+    if(!atStart) faces.push({shaftId:s.id, label:s.id+'·側A', length:s.depth, kind:'sideA'});
+    // Side at the other end — hidden if at end corner
+    if(!atEnd) faces.push({shaftId:s.id, label:s.id+'·側B', length:s.depth, kind:'sideB'});
+  }
+  return faces;
+}
 function estimatePurchase(tiles,singleArea){
   const fullCount=tiles.filter(t=>t.full).length;
   const cutArea=tiles.filter(t=>!t.full).reduce((a,t)=>a+t.usedArea,0);
@@ -1686,35 +1706,41 @@ function renderEditPanel(){
     const r = state.room;
     const perpLen = (s.wall==='W1'||s.wall==='W3') ? r.width : r.length;
     tit.textContent = '管道間 — 貼 '+s.wall;
+    const labels = {W1:['離左','離右'], W2:['離下','離上'], W3:['離左','離右'], W4:['離上','離下']}[s.wall] || ['離始','離末'];
+    const d1 = s.offsetAlong;
+    const d2 = wallLen - s.offsetAlong - s.lenAlong;
     body.innerHTML=`
       <div class="row">
         <label>沿牆長 <input id="sh-len" type="number" value="${s.lenAlong}"/> cm</label>
         <label>深度 <input id="sh-dep" type="number" value="${s.depth}"/> cm</label>
-        <label>沿牆位置 <input id="sh-off" type="number" value="${s.offsetAlong}"/> cm</label>
       </div>
       <div class="row">
-        <label>貼牆
-          <select id="sh-wall">
-            <option value="W1" ${s.wall==='W1'?'selected':''}>W1(下)</option>
-            <option value="W2" ${s.wall==='W2'?'selected':''}>W2(左)</option>
-            <option value="W3" ${s.wall==='W3'?'selected':''}>W3(上)</option>
-            <option value="W4" ${s.wall==='W4'?'selected':''}>W4(右)</option>
-          </select>
-        </label>
+        <label>${labels[0]} <input id="sh-d1" type="number" value="${d1}"/> cm</label>
+        <label>${labels[1]} <input id="sh-d2" type="number" value="${d2}"/> cm</label>
       </div>
+      <p class="hint" style="margin:4px 0 0">貼牆方向直接拖曳到目標牆即可切換。</p>
       <div class="actions-row">
         <button id="sh-apply">套用</button>
         <button class="del" id="sh-del">移除管道間</button>
       </div>
     `;
+    // Two-way reactive: editing one of d1/d2/len auto-recomputes the other distance.
+    $('sh-d1').addEventListener('input', () => {
+      const len = +$('sh-len').value, x = +$('sh-d1').value;
+      if(!isNaN(len) && !isNaN(x)) $('sh-d2').value = wallLen - len - x;
+    });
+    $('sh-d2').addEventListener('input', () => {
+      const len = +$('sh-len').value, x = +$('sh-d2').value;
+      if(!isNaN(len) && !isNaN(x)) $('sh-d1').value = wallLen - len - x;
+    });
+    $('sh-len').addEventListener('input', () => {
+      const len = +$('sh-len').value, x = +$('sh-d1').value;
+      if(!isNaN(len) && !isNaN(x)) $('sh-d2').value = wallLen - len - x;
+    });
     $('sh-apply').onclick=()=>{
-      const newWall = $('sh-wall').value;
-      const newWallLen = wallLengthOf(newWall);
-      const newPerpLen = (newWall==='W1'||newWall==='W3') ? r.width : r.length;
-      let len = Math.max(5, Math.min(+$('sh-len').value || s.lenAlong, newWallLen));
-      let dep = Math.max(5, Math.min(+$('sh-dep').value || s.depth, newPerpLen));
-      let off = Math.max(0, Math.min(+$('sh-off').value || 0, newWallLen - len));
-      s.wall = newWall;
+      let len = Math.max(5, Math.min(+$('sh-len').value || s.lenAlong, wallLen));
+      let dep = Math.max(5, Math.min(+$('sh-dep').value || s.depth, perpLen));
+      let off = Math.max(0, Math.min(+$('sh-d1').value || 0, wallLen - len));
       s.lenAlong = len; s.depth = dep; s.offsetAlong = off;
       render();
     };
@@ -1807,8 +1833,33 @@ function renderTilePreview(){
   const svgW=$('tile-walls');
   while(svgW.firstChild) svgW.removeChild(svgW.firstChild);
   const r=state.room;
-  const totalLen = r.length*2 + r.width*2;
   const fullH = r.wallHeight;
+  const installH_pre = Math.min(state.room.installHeight, fullH);
+  // Build the unified spec list: 4 room walls (with opening + shaft holes) plus
+  // every visible shaft face. Both kinds share tiling rules and contribute to
+  // perimeter length.
+  const wallSpecs = [];
+  ['W1','W2','W3','W4'].forEach(name => {
+    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH_pre).map(o => ({
+      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH_pre-o.bottom)
+    }));
+    const sHoles = shaftSegmentsOnWall(name).map(seg => ({
+      x:seg.left, y:0, w:seg.width, h:installH_pre
+    }));
+    wallSpecs.push({
+      name, label:name, length:wallLengthOf(name),
+      holes:[...oHoles, ...sHoles],
+      offsetX:state.tiles.offsetX[name] || 0,
+      isShaft:false
+    });
+  });
+  shaftVisibleFaces().forEach(face => {
+    wallSpecs.push({
+      name:face.label, label:face.label, length:face.length,
+      holes:[], offsetX:0, isShaft:true
+    });
+  });
+  const totalLen = wallSpecs.reduce((acc, ws) => acc + ws.length, 0);
   const pad=20, gap=14;
   const ws=document.querySelector('.col:last-child');
   const cw=ws?ws.clientWidth:720;
@@ -1831,34 +1882,24 @@ function renderTilePreview(){
   const dimSideW = (state.tiles.dimStyle==='arch') ? 50 : 36;
 
   let ox = pad + dimSideW;
-  const walls = ['W1','W2','W3','W4'];
   let allWallTiles = [];
   // Pre-pass: build all wall tiles so we can run pairing before drawing numbers
   const wallTilesByName = {};
-  let nextWallNum = 1;  // Cumulative tile numbering across W1→W4
-  walls.forEach(name => {
-    const wallLen = wallLengthOf(name);
-    const installH = Math.min(state.room.installHeight, fullH);
-    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH).map(o => ({
-      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH-o.bottom)
-    }));
-    const sHoles = shaftSegmentsOnWall(name).map(seg => ({
-      x:seg.left, y:0, w:seg.width, h:installH
-    }));
-    const holes = [...oHoles, ...sHoles];
-    const tiles = buildTiles(wallLen, installH, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, holes, state.tiles.bondMode, state.tiles.offsetX[name] || 0);
+  let nextWallNum = 1;  // Cumulative tile numbering across all wall faces
+  wallSpecs.forEach(spec => {
+    const tiles = buildTiles(spec.length, installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, spec.holes, state.tiles.bondMode, spec.offsetX);
     nextWallNum += tiles.length;
-    wallTilesByName[name] = tiles;
+    wallTilesByName[spec.name] = tiles;
     allWallTiles = allWallTiles.concat(tiles);
   });
   // Run pairing on all wall cut tiles before drawing
   const wallCuts0 = allWallTiles.filter(t => !t.full);
   const wallPairResult = pairCutTiles(wallCuts0, state.tiles.wallW, state.tiles.wallH);
 
-  walls.forEach((name, idx) => {
-    const wallLen = wallLengthOf(name);
-    const installH = Math.min(state.room.installHeight, fullH);
-    const tiles = wallTilesByName[name];
+  wallSpecs.forEach((spec, idx) => {
+    const wallLen = spec.length;
+    const installH = installH_pre;
+    const tiles = wallTilesByName[spec.name];
     // wall outline
     svgW.appendChild(mr({x:ox, y:pad, width:wallLen*scaleW, height:fullH*scaleW, fill:'none', stroke:'var(--border2)', 'stroke-width':1}));
     // tiles (yflip: bottom = high y)
@@ -1887,34 +1928,40 @@ function renderTilePreview(){
       {x:ox, y:pad+(fullH-installH)*scaleW},
       {x:ox+wallLen*scaleW, y:pad+(fullH-installH)*scaleW},
       'install-line'));
-    // openings
-    openingsOnWall(name).forEach(o => {
-      const ox2 = ox + o.left*scaleW;
-      const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
-      svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
-    });
-    // pipe-shaft segments on this wall: full-height markers with hatch
-    shaftSegmentsOnWall(name).forEach(seg => {
-      const sx = ox + seg.left*scaleW;
-      const sy = pad + (fullH-installH)*scaleW;
-      const sw = seg.width*scaleW;
-      const sh = installH*scaleW;
-      svgW.appendChild(mr({x:sx, y:sy, width:sw, height:sh}, 'preview-shaft'));
-      // diagonal hatch overlay
-      svgW.appendChild(ml({x:sx, y:sy}, {x:sx+sw, y:sy+sh}, 'preview-shaft-hatch'));
-      svgW.appendChild(ml({x:sx+sw, y:sy}, {x:sx, y:sy+sh}, 'preview-shaft-hatch'));
-    });
+    // openings + shaft markers — only on real room walls
+    if(!spec.isShaft){
+      openingsOnWall(spec.name).forEach(o => {
+        const ox2 = ox + o.left*scaleW;
+        const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
+        svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
+      });
+      shaftSegmentsOnWall(spec.name).forEach(seg => {
+        const sx = ox + seg.left*scaleW;
+        const sy = pad + (fullH-installH)*scaleW;
+        const sw = seg.width*scaleW;
+        const sh = installH*scaleW;
+        svgW.appendChild(mr({x:sx, y:sy, width:sw, height:sh}, 'preview-shaft'));
+        svgW.appendChild(ml({x:sx, y:sy}, {x:sx+sw, y:sy+sh}, 'preview-shaft-hatch'));
+        svgW.appendChild(ml({x:sx+sw, y:sy}, {x:sx, y:sy+sh}, 'preview-shaft-hatch'));
+      });
+    }
+    // wall-face label above (only useful for shaft faces; W1-W4 are positional)
+    if(spec.isShaft){
+      const lbl = mt(ox + wallLen*scaleW/2, pad - 6, spec.label, 'preview-label');
+      lbl.setAttribute('font-size', '10');
+      svgW.appendChild(lbl);
+    }
     // width dim below this wall
     drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, wallLen, scaleW,
                  state.tiles.wallW, state.tiles.wallH, grout(),
-                 state.tiles.bondMode, state.tiles.dimStyle, state.tiles.offsetX[name] || 0);
-    // height dim only on outside of W1 (left) and W4 (right)
+                 state.tiles.bondMode, state.tiles.dimStyle, spec.offsetX);
+    // height dim only on outside of first / last spec
     if(idx === 0){
       drawHeightDim(svgW, ox - 6, pad, fullH, installH, scaleW, 'left',
                     state.tiles.wallH, grout(), state.tiles.dimStyle);
     }
     ox += wallLen * scaleW;
-    if(idx === walls.length - 1){
+    if(idx === wallSpecs.length - 1){
       drawHeightDim(svgW, ox + 6, pad, fullH, installH, scaleW, 'right',
                     state.tiles.wallH, grout(), state.tiles.dimStyle);
     }
@@ -2106,12 +2153,16 @@ function updateStats(allTiles){
   const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
   const r=state.room;
   const thr=thresholdRect();
-  // Wall area = perimeter × installHeight, minus per-wall shaft segments (full-height hides)
-  let shaftWallCm2 = 0;
+  // Wall area: perimeter × installHeight, minus shaft hides on room walls,
+  // plus the shaft's own visible inward-facing faces (which now also get tiled).
+  let shaftHiddenCm2 = 0, shaftAddedCm2 = 0;
   for(const s of state.shafts){
-    for(const seg of shaftWallSegments(s)) shaftWallCm2 += seg.width * state.room.installHeight;
+    for(const seg of shaftWallSegments(s)) shaftHiddenCm2 += seg.width * state.room.installHeight;
   }
-  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftWallCm2) / 10000;
+  for(const face of shaftVisibleFaces()){
+    shaftAddedCm2 += face.length * state.room.installHeight;
+  }
+  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftHiddenCm2 + shaftAddedCm2) / 10000;
   // Floor area = room minus threshold and all shaft footprints
   let shaftFloorCm2 = 0;
   for(const s of state.shafts){
