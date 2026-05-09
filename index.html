@@ -1914,12 +1914,14 @@ function renderTilePreview(){
                    offsetX:state.tiles.offsetX[wallName] || 0, label:wallName});
       }
       if(f.kind === 'primary'){
+        // Project the shaft's FRONT face onto its primary wall, replacing the
+        // shaft footprint segment. The side face goes onto the perpendicular
+        // corner wall (handled in the perp branch below for that wall).
         const s = f.shaft;
-        if(!f.atStart) segs.push({wall:wallName, kind:'shaft-face', length:s.depth, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側A'});
         segs.push({wall:wallName, kind:'shaft-face', length:s.lenAlong, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·面'});
-        if(!f.atEnd) segs.push({wall:wallName, kind:'shaft-face', length:s.depth, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側B'});
-      } else { // perp-corner: hidden behind shaft
-        segs.push({wall:wallName, kind:'hidden', length:f.width, shaftId:f.shaft.id, label:f.shaft.id+'·後'});
+      } else { // perp-corner: project the SIDE face here (replaces what would be hidden)
+        const s = f.shaft;
+        segs.push({wall:wallName, kind:'shaft-face', length:f.width, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側'});
       }
       cursor = f.left + f.width;
     }
@@ -2248,16 +2250,10 @@ function updateStats(allTiles){
   const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
   const r=state.room;
   const thr=thresholdRect();
-  // Wall area: perimeter × installHeight, minus shaft hides on room walls,
-  // plus the shaft's own visible inward-facing faces (which are tiled inline).
-  let shaftHiddenCm2 = 0, shaftAddedCm2 = 0;
-  for(const s of state.shafts){
-    for(const seg of shaftWallSegments(s)) shaftHiddenCm2 += seg.width * state.room.installHeight;
-  }
-  for(const face of shaftVisibleFaces()){
-    shaftAddedCm2 += face.length * state.room.installHeight;
-  }
-  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftHiddenCm2 + shaftAddedCm2) / 10000;
+  // Wall area = perimeter × installHeight. Shaft visible faces are projected
+  // onto the wall they parallel, exactly replacing the segment they hide,
+  // so the totals stay the same as if there were no shaft.
+  const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
   // Floor area = room minus threshold and all shaft footprints
   let shaftFloorCm2 = 0;
   for(const s of state.shafts){
