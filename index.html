@@ -179,6 +179,11 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 #tile-unfolded .uf-wall.cut{fill:var(--uf-wall-cut)}
 #tile-unfolded .uf-floor{fill:var(--uf-floor-fill);stroke:var(--uf-stroke);stroke-width:0.5;pointer-events:none}
 #tile-unfolded .uf-floor.cut{fill:var(--uf-floor-cut)}
+#tile-unfolded .uf-wall.shaft{fill:rgba(120,120,110,0.55)}
+#tile-unfolded .uf-wall.cut.shaft{fill:rgba(140,140,120,0.65)}
+#tile-unfolded .uf-shaft{fill:rgba(120,120,110,0.55);stroke:#444;stroke-width:1;pointer-events:none}
+#tile-unfolded .uf-shaft-hatch{stroke:#444;stroke-width:.6;opacity:.7;pointer-events:none}
+#tile-unfolded .uf-shaft-label{fill:var(--fg);font-weight:500;text-anchor:middle;dominant-baseline:middle;opacity:0.75;pointer-events:none}
 #tile-unfolded .uf-tile-num{fill:var(--fg);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle;opacity:0.65}
 #tile-unfolded .uf-floor-bound{fill:none;stroke:var(--line);stroke-width:1.5;pointer-events:none}
 #tile-unfolded .uf-wall-bound{fill:none;stroke:var(--border2);stroke-width:1;pointer-events:none}
@@ -1918,10 +1923,10 @@ function renderTilePreview(){
         // shaft footprint segment. The side face goes onto the perpendicular
         // corner wall (handled in the perp branch below for that wall).
         const s = f.shaft;
-        segs.push({wall:wallName, kind:'shaft-face', length:s.lenAlong, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·面'});
+        segs.push({wall:wallName, kind:'shaft-face', length:s.lenAlong, fromX:f.left, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·面'});
       } else { // perp-corner: project the SIDE face here (replaces what would be hidden)
         const s = f.shaft;
-        segs.push({wall:wallName, kind:'shaft-face', length:f.width, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側'});
+        segs.push({wall:wallName, kind:'shaft-face', length:f.width, fromX:f.left, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側'});
       }
       cursor = f.left + f.width;
     }
@@ -2068,16 +2073,7 @@ function renderTilePreview(){
   const floorCuts0 = floorTiles.filter(t => !t.full);
   const floorPairResult = pairCutTiles(floorCuts0, state.tiles.floorW, state.tiles.floorH);
 
-  // Per-full-wall tiles for the unfolded view (which doesn't model shafts).
-  const wallTilesByName = {};
-  ['W1','W2','W3','W4'].forEach(name => {
-    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH_pre).map(o => ({
-      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH_pre-o.bottom)
-    }));
-    wallTilesByName[name] = buildTiles(wallLengthOf(name), installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), 1, oHoles, state.tiles.bondMode, state.tiles.offsetX[name] || 0);
-  });
-
-  return {wallTiles:allWallTiles, wallTilesByName, floorTiles, wallPair: wallPairResult, floorPair: floorPairResult};
+  return {wallTiles:allWallTiles, wallSpecs, wallTilesList, floorTiles, wallPair: wallPairResult, floorPair: floorPairResult};
 }
 
 // ===== Unfolded box view =====
@@ -2150,15 +2146,29 @@ function renderUnfolded(allTiles){
   function w4Tile(tx, ty, tw, th){ return {x: H + L + ty,        y: H + tx,                 w: th, h: tw}; }
   const tileTransform = { W1: w1Tile, W2: w2Tile, W3: w3Tile, W4: w4Tile };
 
-  // ---------- WALL TILES ----------
-  if(allTiles && allTiles.wallTilesByName){
-    ['W1','W2','W3','W4'].forEach(name => {
-      const tiles = allTiles.wallTilesByName[name] || [];
-      const tx = tileTransform[name];
+  // ---------- WALL TILES (segmented; reuses the wall-preview wallSpecs so
+  // shaft visible faces show up here too, recolored as .uf-wall.shaft) ----------
+  if(allTiles && allTiles.wallSpecs && allTiles.wallTilesList){
+    allTiles.wallSpecs.forEach((spec, i) => {
+      if(spec.kind === 'hidden') return; // defensive; corner-only doesn't emit hidden
+      if(!tileTransform[spec.wall]) return; // skip non-wall groups
+      const tx = tileTransform[spec.wall];
+      const tiles = allTiles.wallTilesList[i] || [];
+      const isShaftFace = spec.kind === 'shaft-face';
+      const fromX = spec.fromX || 0;
       for(const t of tiles){
         for(const p of t.pieces){
-          const u = tx(p.x, p.y, p.w, p.h);
-          drawTileWithNum(t, u.x, u.y, u.w, u.h, false);
+          const u = tx(p.x + fromX, p.y, p.w, p.h);
+          const cls = (t.full ? 'uf-wall' : 'uf-wall cut') + (isShaftFace ? ' shaft' : '');
+          svg.appendChild(cmRect(u.x, u.y, u.w, u.h, cls));
+          // Number text — same sizing logic as drawTileWithNum
+          const minPx = Math.min(u.w, u.h) * scale;
+          const fs = Math.max(4, Math.min(8, minPx * 0.32));
+          if(fs >= 4.5){
+            const numEl = cmText(u.x + u.w/2, u.y + u.h/2, tileLabel(t, false), 'uf-tile-num');
+            numEl.setAttribute('font-size', fs);
+            svg.appendChild(numEl);
+          }
         }
       }
     });
@@ -2197,6 +2207,21 @@ function renderUnfolded(allTiles){
   const thr = thresholdRect();
   if(thr){
     svg.appendChild(cmRect(H + thr.x, H + thr.y, thr.w, thr.h, 'uf-thr'));
+  }
+
+  // ---------- PIPE SHAFTS (floor footprint, matches plan-view styling) ----------
+  for(const s of state.shafts){
+    const fr = shaftFloorRect(s);
+    const sx = ox + (H + fr.x) * scale;
+    const sy = oy + (H + fr.y) * scale;
+    const sw = fr.w * scale, sh = fr.h * scale;
+    svg.appendChild(mr({x:sx, y:sy, width:sw, height:sh}, 'uf-shaft'));
+    svg.appendChild(ml({x:sx, y:sy}, {x:sx+sw, y:sy+sh}, 'uf-shaft-hatch'));
+    svg.appendChild(ml({x:sx+sw, y:sy}, {x:sx, y:sy+sh}, 'uf-shaft-hatch'));
+    const fs = Math.max(8, Math.min(11, Math.min(sw, sh) * 0.18));
+    const lbl = mt(sx+sw/2, sy+sh/2, s.lenAlong+'×'+s.depth, 'uf-shaft-label');
+    lbl.setAttribute('font-size', fs);
+    svg.appendChild(lbl);
   }
 
   // ---------- OUTLINES (last → on top) ----------
