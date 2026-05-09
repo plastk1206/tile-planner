@@ -281,6 +281,21 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 
 .hint{font-size:12px;color:var(--hint);margin-top:6px;line-height:1.5}
 input[type=file]{display:none}
+
+/* Touch enhancements: larger drag/tap targets for fingers */
+@media (pointer: coarse){
+  .oh{stroke-width:40}     /* door/window drag hit area */
+  .epF{r:16}               /* opening edit handles */
+}
+
+/* iPad landscape: lock page scroll so missed drags can't pan the viewport.
+   Inner columns keep their own scroll for overflow. */
+@media (min-width:1024px) and (orientation:landscape) and (pointer:coarse){
+  html,body{height:100vh;overflow:hidden;overscroll-behavior:none}
+  .wrap{height:100vh;max-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  .main-grid{flex:1;min-height:0}
+  .main-grid > .col{max-height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+}
 </style>
 </head>
 <body>
