@@ -137,7 +137,9 @@ body.dragging .oh,body.dragging .thr-rect{cursor:grabbing}
 .tile-section h3 .pstats{margin-left:auto;display:flex;gap:14px;font-size:11px;color:var(--muted);font-weight:400}
 .tile-section h3 .pstats span{font-weight:500}
 .tile-section h3 .pstats strong{color:var(--info);font-weight:700;font-size:13px;margin-left:4px}
-.summary-bar{background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;display:flex;gap:24px;flex-wrap:wrap}
+.summary-bar{background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.summary-bar .sb-row{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.summary-bar .sb-row-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;min-width:68px;border-right:.5px solid var(--border);padding-right:14px}
 .tile-section h3 .seg{display:inline-flex;gap:4px}
 .tile-section h3 .seg button{height:24px;padding:0 8px;font-size:11px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:5px;cursor:pointer;font-weight:400}
 .tile-section h3 .seg button.active{background:var(--line);color:var(--card);border-color:var(--line);font-weight:500}
@@ -249,16 +251,6 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 .cv svg{max-height:480px}
 .tile-section svg{max-height:none}
 
-.prev-tools{display:flex;gap:14px;align-items:center;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:8px 12px;flex-wrap:wrap}
-.prev-tools .lbl{font-size:12px;color:var(--muted);font-weight:500}
-.prev-tools .seg{display:inline-flex;gap:4px}
-.prev-tools .seg button{height:28px;padding:0 10px;font-size:12px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:6px;cursor:pointer}
-.prev-tools .seg button.active{background:var(--line);color:var(--card);border-color:var(--line)}
-.prev-tools .seg button:hover{background:var(--bg2)}
-.prev-tools .seg button.active:hover{background:var(--line)}
-.prev-tools input{height:28px;width:60px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;padding:0 6px;background:var(--card);color:var(--fg);text-align:center;-webkit-appearance:none}
-.prev-tools input:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
-.prev-tools .unit{font-size:11px;color:var(--hint);margin-left:-6px}
 
 .offset-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px}
 .offset-row .title{grid-column:1/-1;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:-2px}
@@ -296,7 +288,7 @@ input[type=file]{display:none}
 <div class="head">
   <h1>浴室磁磚計畫</h1>
   <div class="actions">
-    <button id="theme-toggle" title="切換主題">主題: 自動</button>
+    <button id="theme-toggle" title="切換主題">主題: 淺色</button>
     <button id="ex-pdf" title="列印 → 存為 PDF(向量、最穩定、跨瀏覽器)">匯出 PDF</button>
     <button id="ex-png" title="匯出當前畫面為 PNG(平面圖 + 磁磚展開圖)">匯出 PNG</button>
     <button id="ex-svg" title="匯出當前畫面為 SVG(向量,可在 Illustrator / Figma 編輯)">匯出 SVG</button>
@@ -367,22 +359,24 @@ input[type=file]{display:none}
 </div>
 
 <div class="summary-bar">
-  <div class="it"><div class="lab">總全片</div><div class="val" id="s-full">—</div><div class="sub" id="s-full-sub"></div></div>
-  <div class="it"><div class="lab">總裁切</div><div class="val" id="s-cut">—</div><div class="sub" id="s-cut-sub"></div></div>
-  <div class="it"><div class="lab">總計</div><div class="val" id="s-total">—</div><div class="sub">片</div></div>
-  <div class="it"><div class="lab">估購</div><div class="val" id="s-buy">—</div><div class="sub" id="s-buy-sub">—</div></div>
-  <div class="it"><div class="lab">鋪貼面積</div><div class="val" id="s-area">—</div><div class="sub">m²</div><div class="val-pin" id="s-pin">—</div><div class="sub">坪</div></div>
+  <div class="sb-row">
+    <span class="sb-row-lbl">牆面磁磚</span>
+    <div class="it"><div class="lab">全片</div><div class="val" id="s-w-full">—</div><div class="sub">片</div></div>
+    <div class="it"><div class="lab">裁切</div><div class="val" id="s-w-cut">—</div><div class="sub">片</div></div>
+    <div class="it"><div class="lab">估購</div><div class="val" id="s-w-buy">—</div><div class="sub" id="s-w-buy-sub">—</div></div>
+    <div class="it"><div class="lab">鋪貼面積</div><div class="val" id="s-w-area">—</div><div class="sub">m²</div><div class="val-pin" id="s-w-pin">—</div><div class="sub">坪</div></div>
+  </div>
+  <div class="sb-row">
+    <span class="sb-row-lbl">地板磁磚</span>
+    <div class="it"><div class="lab">全片</div><div class="val" id="s-f-full">—</div><div class="sub">片</div></div>
+    <div class="it"><div class="lab">裁切</div><div class="val" id="s-f-cut">—</div><div class="sub">片</div></div>
+    <div class="it"><div class="lab">估購</div><div class="val" id="s-f-buy">—</div><div class="sub" id="s-f-buy-sub">—</div></div>
+    <div class="it"><div class="lab">鋪貼面積</div><div class="val" id="s-f-area">—</div><div class="sub">m²</div><div class="val-pin" id="s-f-pin">—</div><div class="sub">坪</div></div>
+  </div>
 </div>
 
 </div>
   <div class="col">
-    <div class="prev-tools">
-      <span class="lbl">切割</span>
-      <div class="seg" id="seg-cut">
-        <button data-cut="naive" class="active">標準</button>
-        <button data-cut="optimized">最佳化</button>
-      </div>
-    </div>
     <div class="offset-row" id="offset-row">
       <div class="title">起鋪點偏移</div>
       <div class="offset-item" data-wall="W1">
@@ -411,7 +405,7 @@ input[type=file]{display:none}
       </div>
     </div>
     <div class="tile-section">
-      <h3><span id="tile-view-title">牆面磁磚展開</span> <span class="pstats" id="walls-stats"></span><span class="bond-lbl">排版</span><div class="seg" id="seg-tile-view"><button data-view="walls" class="active" title="逐面牆攤平,方便比較尺寸">牆面</button><button data-view="unfolded" title="像紙盒平鋪展開,中央地板四周牆面,檢視磁磚對縫">紙盒</button></div><span class="bond-lbl">牆磚貼法</span><select class="wbond-select" title="牆磚的橫向錯位方式:對齊=同一條垂直縫;交丁=每排錯開">
+      <h3><span id="tile-view-title">牆面磁磚展開</span> <span class="pstats" id="walls-stats"></span><span class="bond-lbl">切割</span><div class="seg" id="seg-cut"><button data-cut="naive" class="active" title="每片裁切都用一片新原磚">標準</button><button data-cut="optimized" title="盡量讓多片裁切共用同一片原磚,省料">最佳化</button></div><span class="bond-lbl">排版</span><div class="seg" id="seg-tile-view"><button data-view="walls" class="active" title="逐面牆攤平,方便比較尺寸">牆面</button><button data-view="unfolded" title="像紙盒平鋪展開,中央地板四周牆面,檢視磁磚對縫">紙盒</button></div><span class="bond-lbl">牆磚貼法</span><select class="wbond-select" title="牆磚的橫向錯位方式:對齊=同一條垂直縫;交丁=每排錯開">
         <option value="aligned">對齊</option>
         <option value="half">交丁 1/2</option>
         <option value="third">交丁 1/3</option>
@@ -450,17 +444,19 @@ function gcEvent(name, title){
 
 // ===== Theme management =====
 const THEME_KEY = 'tile-planner-theme';
-const THEME_ORDER = ['auto', 'light', 'dark'];
-const THEME_LABEL = { auto: '自動', light: '淺色', dark: '深色' };
+const THEME_ORDER = ['light', 'dark'];
+const THEME_LABEL = { light: '淺色', dark: '深色' };
 function applyTheme(t){
-  if(t === 'auto') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', t);
+  document.documentElement.setAttribute('data-theme', t);
   const btn = document.getElementById('theme-toggle');
   if(btn) btn.textContent = '主題: ' + THEME_LABEL[t];
 }
 let _currentTheme = (function(){
-  try { return localStorage.getItem(THEME_KEY) || 'auto'; }
-  catch(e){ return 'auto'; }
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    return THEME_ORDER.includes(saved) ? saved : 'light';
+  }
+  catch(e){ return 'light'; }
 })();
 applyTheme(_currentTheme);
 document.addEventListener('DOMContentLoaded', () => {
@@ -1835,40 +1831,24 @@ function updateStats(allTiles){
   const thr=thresholdRect();
   const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
   const floorArea = (r.length*r.width - (thr?thr.w*thr.h:0)) / 10000;
-  // totals
-  $('s-full').textContent = wFull+fFull;
-  $('s-full-sub').textContent = `牆${wFull} 地${fFull}`;
-  $('s-cut').textContent = wCut+fCut;
-  $('s-cut-sub').textContent = `牆${wCut} 地${fCut}`;
-  $('s-total').textContent = wallTiles.length+floorTiles.length;
-  $('s-buy').textContent = wBuy+fBuy;
-  // savings sub
-  const sBuySub = $('s-buy-sub');
-  if(sBuySub){
-    // Count shared-donor groups (size >= 2) for diagnostic
-    let sharedCount = 0;
-    if(allTiles.wallPair && allTiles.wallPair.donorOccupants){
-      for(const k in allTiles.wallPair.donorOccupants){
-        if(allTiles.wallPair.donorOccupants[k].length > 1) sharedCount++;
-      }
-    }
-    if(allTiles.floorPair && allTiles.floorPair.donorOccupants){
-      for(const k in allTiles.floorPair.donorOccupants){
-        if(allTiles.floorPair.donorOccupants[k].length > 1) sharedCount++;
-      }
-    }
-    if(savings <= 0){
-      sBuySub.textContent = '無共用原磚機會';
-    } else if(isOpt){
-      sBuySub.textContent = `省 ${savings} 片(${sharedCount} 片原磚共用)`;
-    } else {
-      sBuySub.textContent = `最佳化可省 ${savings} 片`;
-    }
+  const wallSavings = wallBuyNaive - wallBuyOpt;
+  const floorSavings = floorBuyNaive - floorBuyOpt;
+  function buySubText(savings, isOptMode){
+    if(savings <= 0) return '片';
+    return isOptMode ? `片 / 省 ${savings}` : `片 / 最佳化可省 ${savings}`;
   }
-  const totalAreaM2 = wallArea + floorArea;
-  const totalAreaPin = totalAreaM2 / 3.30579;
-  $('s-area').textContent = totalAreaM2.toFixed(2);
-  $('s-pin').textContent = totalAreaPin.toFixed(2);
+  $('s-w-full').textContent = wFull;
+  $('s-w-cut').textContent = wCut;
+  $('s-w-buy').textContent = wBuy;
+  $('s-w-buy-sub').textContent = buySubText(wallSavings, isOpt);
+  $('s-w-area').textContent = wallArea.toFixed(2);
+  $('s-w-pin').textContent = (wallArea / 3.30579).toFixed(2);
+  $('s-f-full').textContent = fFull;
+  $('s-f-cut').textContent = fCut;
+  $('s-f-buy').textContent = fBuy;
+  $('s-f-buy-sub').textContent = buySubText(floorSavings, isOpt);
+  $('s-f-area').textContent = floorArea.toFixed(2);
+  $('s-f-pin').textContent = (floorArea / 3.30579).toFixed(2);
   // per-preview inline
   const ws=$('walls-stats'), fs=$('floor-stats');
   if(ws) ws.innerHTML = `<span>全片<strong>${wFull}</strong></span><span>裁切<strong>${wCut}</strong></span><span>估購<strong>${wBuy}</strong></span><span>${wallArea.toFixed(2)} m²</span>`;
