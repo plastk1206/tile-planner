@@ -1462,19 +1462,12 @@ document.addEventListener('pointermove', e => {
         case 'W4': return fy;
       }
     }
-    if(targetWall !== s.wall){
-      const placement = pickShaftPlacement(fx, fy, s.lenAlong);
-      s.wall = placement.wall;
-      s.offsetAlong = placement.offsetAlong;
-      // Re-anchor grabAlong to the new wall's coordinate system so subsequent
-      // moves on the same wall feel continuous instead of jumping again.
-      dragging.grabAlong = alongFor(s.wall) - s.offsetAlong;
-    } else {
-      const wallLen = wallLengthOf(s.wall);
-      let newOff = Math.round(alongFor(s.wall) - dragging.grabAlong);
-      newOff = Math.max(0, Math.min(wallLen - s.lenAlong, newOff));
-      if(s.offsetAlong !== newOff) s.offsetAlong = newOff;
-    }
+    // Corner-only: snap offsetAlong to 0 (start corner) or wallLen-lenAlong (end corner)
+    if(targetWall !== s.wall) s.wall = targetWall;
+    const wallLenN = wallLengthOf(s.wall);
+    const along = alongFor(s.wall);
+    const snappedOff = (along < wallLenN/2) ? 0 : Math.max(0, wallLenN - s.lenAlong);
+    if(s.offsetAlong !== snappedOff) s.offsetAlong = snappedOff;
     state.selected = {kind:'shaft', id:s.id};
     scheduleRender();
   }
@@ -1578,9 +1571,9 @@ function applyShaftDist(shaftId, side, value){
   if(isNaN(value) || value<0) return;
   const s = state.shafts.find(x => x.id === shaftId); if(!s) return;
   const wallLen = wallLengthOf(s.wall);
-  const newOff = (side === 'start') ? value : (wallLen - value - s.lenAlong);
-  if(newOff < 0 || newOff + s.lenAlong > wallLen) return;
-  s.offsetAlong = Math.round(newOff);
+  // Corner-only: snap whatever the user typed to the nearest corner.
+  const target = (side === 'start') ? value : (wallLen - value - s.lenAlong);
+  s.offsetAlong = (target < wallLen/2) ? 0 : Math.max(0, wallLen - s.lenAlong);
   render();
 }
 
@@ -1607,7 +1600,8 @@ function applyWallLen(name, cm){
     const perpLen = (s.wall==='W1'||s.wall==='W3') ? state.room.width : state.room.length;
     s.lenAlong = Math.max(5, Math.min(s.lenAlong, wallLen));
     s.depth = Math.max(5, Math.min(s.depth, perpLen));
-    s.offsetAlong = Math.max(0, Math.min(s.offsetAlong, wallLen - s.lenAlong));
+    // Corner-only: snap to whichever corner is closer
+    s.offsetAlong = (s.offsetAlong < wallLen/2) ? 0 : Math.max(0, wallLen - s.lenAlong);
   }
   render();
 }
@@ -1757,41 +1751,32 @@ function renderEditPanel(){
     const r = state.room;
     const perpLen = (s.wall==='W1'||s.wall==='W3') ? r.width : r.length;
     tit.textContent = '管道間 — 貼 '+s.wall;
-    const labels = {W1:['離左','離右'], W2:['離下','離上'], W3:['離左','離右'], W4:['離上','離下']}[s.wall] || ['離始','離末'];
-    const d1 = s.offsetAlong;
-    const d2 = wallLen - s.offsetAlong - s.lenAlong;
+    const labels = {W1:['左下','右下'], W2:['左下','左上'], W3:['左上','右上'], W4:['右上','右下']}[s.wall] || ['A端','B端'];
+    const atStart = s.offsetAlong < 0.5;
     body.innerHTML=`
       <div class="row">
         <label>沿牆長 <input id="sh-len" type="number" value="${s.lenAlong}"/> cm</label>
         <label>深度 <input id="sh-dep" type="number" value="${s.depth}"/> cm</label>
       </div>
       <div class="row">
-        <label>${labels[0]} <input id="sh-d1" type="number" value="${d1}"/> cm</label>
-        <label>${labels[1]} <input id="sh-d2" type="number" value="${d2}"/> cm</label>
+        <label>角落
+          <select id="sh-corner">
+            <option value="start" ${atStart?'selected':''}>${labels[0]}</option>
+            <option value="end" ${!atStart?'selected':''}>${labels[1]}</option>
+          </select>
+        </label>
       </div>
-      <p class="hint" style="margin:4px 0 0">貼牆方向直接拖曳到目標牆即可切換。</p>
+      <p class="hint" style="margin:4px 0 0">管道間限制只能貼角落。拖曳到別的角落會自動 snap 過去。</p>
       <div class="actions-row">
         <button id="sh-apply">套用</button>
         <button class="del" id="sh-del">移除管道間</button>
       </div>
     `;
-    // Two-way reactive: editing one of d1/d2/len auto-recomputes the other distance.
-    $('sh-d1').addEventListener('input', () => {
-      const len = +$('sh-len').value, x = +$('sh-d1').value;
-      if(!isNaN(len) && !isNaN(x)) $('sh-d2').value = wallLen - len - x;
-    });
-    $('sh-d2').addEventListener('input', () => {
-      const len = +$('sh-len').value, x = +$('sh-d2').value;
-      if(!isNaN(len) && !isNaN(x)) $('sh-d1').value = wallLen - len - x;
-    });
-    $('sh-len').addEventListener('input', () => {
-      const len = +$('sh-len').value, x = +$('sh-d1').value;
-      if(!isNaN(len) && !isNaN(x)) $('sh-d2').value = wallLen - len - x;
-    });
     $('sh-apply').onclick=()=>{
       let len = Math.max(5, Math.min(+$('sh-len').value || s.lenAlong, wallLen));
       let dep = Math.max(5, Math.min(+$('sh-dep').value || s.depth, perpLen));
-      let off = Math.max(0, Math.min(+$('sh-d1').value || 0, wallLen - len));
+      const corner = $('sh-corner').value;
+      const off = (corner === 'start') ? 0 : Math.max(0, wallLen - len);
       s.lenAlong = len; s.depth = dep; s.offsetAlong = off;
       render();
     };
@@ -1905,12 +1890,13 @@ function renderTilePreview(){
   }
   function buildWallTimeline(wallName){
     const wallLen = wallLengthOf(wallName);
-    // Features touching this wall (primary shaft + perp-corner shaft segments)
     const features = [];
     for(const s of state.shafts){
       if(s.wall === wallName){
         const atStart = s.offsetAlong < eps;
         const atEnd = s.offsetAlong + s.lenAlong > wallLen - eps;
+        // Corner-only constraint: shafts always sit at a corner so atStart || atEnd
+        // is expected to be true. The non-corner case is just defensive.
         features.push({kind:'primary', shaft:s, left:s.offsetAlong, width:s.lenAlong, atStart, atEnd});
       } else {
         for(const seg of shaftWallSegments(s)){
@@ -2344,7 +2330,8 @@ function readSettings(){
     const perpLen = (s.wall==='W1'||s.wall==='W3') ? state.room.width : state.room.length;
     s.lenAlong = Math.max(5, Math.min(s.lenAlong, wallLen));
     s.depth = Math.max(5, Math.min(s.depth, perpLen));
-    s.offsetAlong = Math.max(0, Math.min(s.offsetAlong, wallLen - s.lenAlong));
+    // Corner-only: snap to whichever corner is closer
+    s.offsetAlong = (s.offsetAlong < wallLen/2) ? 0 : Math.max(0, wallLen - s.lenAlong);
   }
   render();
 }
