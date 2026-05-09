@@ -2034,10 +2034,14 @@ function renderTilePreview(){
         svgW.appendChild(mr({x: ox + (ox1-fromX)*scaleW, y: pad + (fullH-o.bottom-o.height)*scaleW,
                              width: (ox2-ox1)*scaleW, height: o.height*scaleW}, 'preview-opening'));
       });
-    } else if(isShaftFace){
-      // Small label above shaft face so user knows which face is which
+    }
+    // Label above every segment so users can match wall preview to plan view:
+    //   - wall segment -> W1 / W2 / W3 / W4
+    //   - shaft face   -> P1·面 / P1·側
+    if(spec.kind === 'wall' || isShaftFace){
       const lbl = mt(ox + segLen*scaleW/2, pad - 4, spec.label, 'preview-label');
       lbl.setAttribute('font-size', '9');
+      lbl.setAttribute('font-weight', spec.kind === 'wall' ? '600' : '500');
       svgW.appendChild(lbl);
     }
     drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, segLen, scaleW,
