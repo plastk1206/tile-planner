@@ -1886,23 +1886,67 @@ function renderTilePreview(){
   const r=state.room;
   const fullH = r.wallHeight;
   const installH_pre = Math.min(state.room.installHeight, fullH);
-  // Build the unified spec list: just the 4 room walls. Pipe shafts are NOT
-  // pulled out as separate wall faces; instead their footprint on the wall
-  // gets tiled in place with a recolored class so users can see the shaft
-  // area without the visual disruption of a separate section.
-  const wallSpecs = [];
-  ['W1','W2','W3','W4'].forEach(name => {
-    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH_pre).map(o => ({
-      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH_pre-o.bottom)
-    }));
-    wallSpecs.push({
-      name, label:name, length:wallLengthOf(name),
-      holes:oHoles,
-      offsetX:state.tiles.offsetX[name] || 0,
-      shaftSegs:shaftSegmentsOnWall(name)
-    });
-  });
-  const totalLen = wallSpecs.reduce((acc, ws) => acc + ws.length, 0);
+  // Build a timeline per room wall: each wall is split into a flat sequence of
+  // tile-able sub-segments so that pipe shafts produce visible side+front faces
+  // inline at their position, and corner-perpendicular walls get a "hidden"
+  // placeholder where the shaft sits behind them.
+  const eps = 0.5;
+  function buildHoleSlice(wallName, fromX, segLen){
+    const installH = installH_pre;
+    const out = [];
+    for(const o of openingsOnWall(wallName)){
+      if(o.bottom >= installH) continue;
+      const ox1 = Math.max(o.left, fromX);
+      const ox2 = Math.min(o.left + o.width, fromX + segLen);
+      if(ox1 >= ox2) continue;
+      out.push({x: ox1 - fromX, y: o.bottom, w: ox2 - ox1, h: Math.min(o.height, installH - o.bottom)});
+    }
+    return out;
+  }
+  function buildWallTimeline(wallName){
+    const wallLen = wallLengthOf(wallName);
+    // Features touching this wall (primary shaft + perp-corner shaft segments)
+    const features = [];
+    for(const s of state.shafts){
+      if(s.wall === wallName){
+        const atStart = s.offsetAlong < eps;
+        const atEnd = s.offsetAlong + s.lenAlong > wallLen - eps;
+        features.push({kind:'primary', shaft:s, left:s.offsetAlong, width:s.lenAlong, atStart, atEnd});
+      } else {
+        for(const seg of shaftWallSegments(s)){
+          if(seg.wall === wallName) features.push({kind:'perp', shaft:s, left:seg.left, width:seg.width});
+        }
+      }
+    }
+    features.sort((a,b) => a.left - b.left);
+    const segs = [];
+    let cursor = 0;
+    for(const f of features){
+      if(f.left > cursor + eps){
+        segs.push({wall:wallName, kind:'wall', length:f.left-cursor, fromX:cursor,
+                   holes:buildHoleSlice(wallName, cursor, f.left-cursor),
+                   offsetX:state.tiles.offsetX[wallName] || 0, label:wallName});
+      }
+      if(f.kind === 'primary'){
+        const s = f.shaft;
+        if(!f.atStart) segs.push({wall:wallName, kind:'shaft-face', length:s.depth, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側A'});
+        segs.push({wall:wallName, kind:'shaft-face', length:s.lenAlong, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·面'});
+        if(!f.atEnd) segs.push({wall:wallName, kind:'shaft-face', length:s.depth, holes:[], offsetX:0, shaftId:s.id, label:s.id+'·側B'});
+      } else { // perp-corner: hidden behind shaft
+        segs.push({wall:wallName, kind:'hidden', length:f.width, shaftId:f.shaft.id, label:f.shaft.id+'·後'});
+      }
+      cursor = f.left + f.width;
+    }
+    if(cursor < wallLen - eps){
+      segs.push({wall:wallName, kind:'wall', length:wallLen-cursor, fromX:cursor,
+                 holes:buildHoleSlice(wallName, cursor, wallLen-cursor),
+                 offsetX:state.tiles.offsetX[wallName] || 0, label:wallName});
+    }
+    if(segs.length) segs[segs.length-1].isLastInWall = true;
+    return segs;
+  }
+  const wallSpecs = ['W1','W2','W3','W4'].flatMap(buildWallTimeline);
+  const totalLen = wallSpecs.reduce((acc, s) => acc + s.length, 0);
   const pad=20, gap=14;
   const ws=document.querySelector('.col:last-child');
   const cw=ws?ws.clientWidth:720;
@@ -1926,35 +1970,51 @@ function renderTilePreview(){
 
   let ox = pad + dimSideW;
   let allWallTiles = [];
-  // Pre-pass: build all wall tiles so we can run pairing before drawing numbers
-  const wallTilesByName = {};
-  let nextWallNum = 1;  // Cumulative tile numbering across all wall faces
+  const wallTilesList = [];   // per spec index; empty array for hidden segments
+  let nextWallNum = 1;        // cumulative across all tile-able segments
   wallSpecs.forEach(spec => {
+    if(spec.kind === 'hidden'){
+      wallTilesList.push([]);
+      return;
+    }
     const tiles = buildTiles(spec.length, installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, spec.holes, state.tiles.bondMode, spec.offsetX);
     nextWallNum += tiles.length;
-    wallTilesByName[spec.name] = tiles;
+    wallTilesList.push(tiles);
     allWallTiles = allWallTiles.concat(tiles);
   });
-  // Run pairing on all wall cut tiles before drawing
   const wallCuts0 = allWallTiles.filter(t => !t.full);
   const wallPairResult = pairCutTiles(wallCuts0, state.tiles.wallW, state.tiles.wallH);
 
   wallSpecs.forEach((spec, idx) => {
-    const wallLen = spec.length;
+    const segLen = spec.length;
     const installH = installH_pre;
-    const tiles = wallTilesByName[spec.name];
-    // wall outline
-    svgW.appendChild(mr({x:ox, y:pad, width:wallLen*scaleW, height:fullH*scaleW, fill:'none', stroke:'var(--border2)', 'stroke-width':1}));
-    const shaftSegs = spec.shaftSegs || [];
-    function inShaft(p){
-      const cx = p.x + p.w/2;
-      return shaftSegs.some(seg => cx >= seg.left && cx <= seg.left + seg.width);
+
+    if(spec.kind === 'hidden'){
+      // Placeholder for the room wall section sitting behind the shaft. No
+      // tiles, just a gray hatched panel so users see "this part is hidden".
+      svgW.appendChild(mr({x:ox, y:pad, width:segLen*scaleW, height:fullH*scaleW,
+                           fill:'rgba(120,120,110,0.12)', stroke:'var(--border2)', 'stroke-width':1, 'stroke-dasharray':'4 3'}));
+      svgW.appendChild(ml({x:ox, y:pad}, {x:ox+segLen*scaleW, y:pad+fullH*scaleW}, 'preview-shaft-hatch'));
+      svgW.appendChild(ml({x:ox+segLen*scaleW, y:pad}, {x:ox, y:pad+fullH*scaleW}, 'preview-shaft-hatch'));
+      const lblH = mt(ox + segLen*scaleW/2, pad - 4, spec.label, 'preview-label');
+      lblH.setAttribute('font-size', '9');
+      svgW.appendChild(lblH);
+      ox += segLen * scaleW;
+      if(spec.isLastInWall && idx !== wallSpecs.length - 1) ox += gap;
+      return;
     }
-    // tiles (yflip: bottom = high y)
+
+    const tiles = wallTilesList[idx];
+    const isShaftFace = spec.kind === 'shaft-face';
+    // segment outline (slightly thicker on shaft faces for clear division)
+    svgW.appendChild(mr({x:ox, y:pad, width:segLen*scaleW, height:fullH*scaleW,
+                         fill:'none',
+                         stroke: isShaftFace ? 'var(--info)' : 'var(--border2)',
+                         'stroke-width': isShaftFace ? 1.4 : 1}));
     for(const t of tiles){
       for(const p of t.pieces){
         const py = (fullH - p.y - p.h)*scaleW;
-        const cls = 'tile'+(t.full?'':' cut')+(inShaft(p)?' shaft':'');
+        const cls = 'tile'+(t.full?'':' cut')+(isShaftFace ? ' shaft' : '');
         svgW.appendChild(mr({x:ox+p.x*scaleW, y:pad+py, width:p.w*scaleW, height:p.h*scaleW}, cls));
       }
       if(t.pieces.length){
@@ -1972,32 +2032,40 @@ function renderTilePreview(){
         svgW.appendChild(numEl);
       }
     }
-    // install line
     svgW.appendChild(ml(
       {x:ox, y:pad+(fullH-installH)*scaleW},
-      {x:ox+wallLen*scaleW, y:pad+(fullH-installH)*scaleW},
+      {x:ox+segLen*scaleW, y:pad+(fullH-installH)*scaleW},
       'install-line'));
-    // openings (shaft regions are already shown via recolored tiles, no overlay)
-    openingsOnWall(spec.name).forEach(o => {
-      const ox2 = ox + o.left*scaleW;
-      const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
-      svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
-    });
-    // width dim below this wall
-    drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, wallLen, scaleW,
+    // openings (only on actual wall segments) — clip them to this segment's local x
+    if(spec.kind === 'wall'){
+      const fromX = spec.fromX || 0;
+      openingsOnWall(spec.wall).forEach(o => {
+        const ox1 = Math.max(o.left, fromX);
+        const ox2 = Math.min(o.left + o.width, fromX + segLen);
+        if(ox1 >= ox2) return;
+        svgW.appendChild(mr({x: ox + (ox1-fromX)*scaleW, y: pad + (fullH-o.bottom-o.height)*scaleW,
+                             width: (ox2-ox1)*scaleW, height: o.height*scaleW}, 'preview-opening'));
+      });
+    } else if(isShaftFace){
+      // Small label above shaft face so user knows which face is which
+      const lbl = mt(ox + segLen*scaleW/2, pad - 4, spec.label, 'preview-label');
+      lbl.setAttribute('font-size', '9');
+      svgW.appendChild(lbl);
+    }
+    drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, segLen, scaleW,
                  state.tiles.wallW, state.tiles.wallH, grout(),
                  state.tiles.bondMode, state.tiles.dimStyle, spec.offsetX);
-    // height dim only on outside of first / last spec
     if(idx === 0){
       drawHeightDim(svgW, ox - 6, pad, fullH, installH, scaleW, 'left',
                     state.tiles.wallH, grout(), state.tiles.dimStyle);
     }
-    ox += wallLen * scaleW;
+    ox += segLen * scaleW;
     if(idx === wallSpecs.length - 1){
       drawHeightDim(svgW, ox + 6, pad, fullH, installH, scaleW, 'right',
                     state.tiles.wallH, grout(), state.tiles.dimStyle);
     }
-    ox += gap;
+    // Only add a gap when crossing from one wall's last segment to the next wall.
+    if(spec.isLastInWall && idx !== wallSpecs.length - 1) ox += gap;
   });
 
   // Build floor tile data (for stats only — drawing happens in renderPlan via g-tiles)
@@ -2007,6 +2075,15 @@ function renderTilePreview(){
   const floorTiles=buildTiles(r.length, r.width, state.tiles.floorW, state.tiles.floorH, grout(), 1, fHoles, state.tiles.floorBondMode, state.tiles.floorOffset.x, state.tiles.floorOffset.y);
   const floorCuts0 = floorTiles.filter(t => !t.full);
   const floorPairResult = pairCutTiles(floorCuts0, state.tiles.floorW, state.tiles.floorH);
+
+  // Per-full-wall tiles for the unfolded view (which doesn't model shafts).
+  const wallTilesByName = {};
+  ['W1','W2','W3','W4'].forEach(name => {
+    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH_pre).map(o => ({
+      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH_pre-o.bottom)
+    }));
+    wallTilesByName[name] = buildTiles(wallLengthOf(name), installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), 1, oHoles, state.tiles.bondMode, state.tiles.offsetX[name] || 0);
+  });
 
   return {wallTiles:allWallTiles, wallTilesByName, floorTiles, wallPair: wallPairResult, floorPair: floorPairResult};
 }
@@ -2185,9 +2262,16 @@ function updateStats(allTiles){
   const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
   const r=state.room;
   const thr=thresholdRect();
-  // Wall area = perimeter × installHeight. Shaft regions are shown in-place
-  // on the room walls (recolored tiles), so the area accounting is unchanged.
-  const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
+  // Wall area: perimeter × installHeight, minus shaft hides on room walls,
+  // plus the shaft's own visible inward-facing faces (which are tiled inline).
+  let shaftHiddenCm2 = 0, shaftAddedCm2 = 0;
+  for(const s of state.shafts){
+    for(const seg of shaftWallSegments(s)) shaftHiddenCm2 += seg.width * state.room.installHeight;
+  }
+  for(const face of shaftVisibleFaces()){
+    shaftAddedCm2 += face.length * state.room.installHeight;
+  }
+  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftHiddenCm2 + shaftAddedCm2) / 10000;
   // Floor area = room minus threshold and all shaft footprints
   let shaftFloorCm2 = 0;
   for(const s of state.shafts){
