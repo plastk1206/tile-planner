@@ -124,6 +124,8 @@ body.dragging .oh,body.dragging .thr-rect{cursor:grabbing}
 .tile-section svg{display:block;width:100%;height:auto}
 
 .tile{fill:var(--tile-fill);stroke:var(--tile-line);stroke-width:.4}
+.tile.shaft{fill:rgba(120,120,110,0.55)}
+.tile.cut.shaft{fill:rgba(140,140,120,0.65)}
 .tile.cut{fill:var(--tile-cut)}
 .ftile{fill:var(--floor-fill);stroke:var(--tile-line);stroke-width:.4}
 .ftile.cut{fill:var(--floor-cut)}
@@ -1048,14 +1050,53 @@ function renderPlan(floorData){
     const rect = mr({x:rx, y:ry, width:rw, height:rh}, 'shaft-rect'+(sel?' sel':''));
     rect.dataset.shaftId = s.id;
     Gshaft.appendChild(rect);
-    // diagonal hatch (two crossing lines so it's clearly distinct from door/threshold)
     Gshaft.appendChild(ml({x:rx, y:ry}, {x:rx+rw, y:ry+rh}, 'shaft-hatch'));
     Gshaft.appendChild(ml({x:rx+rw, y:ry}, {x:rx, y:ry+rh}, 'shaft-hatch'));
-    // dim label inside shaft
     const fs = Math.max(8, Math.min(11, Math.min(rw, rh) * 0.18));
     const lbl = mt(rx+rw/2, ry+rh/2, s.lenAlong+'×'+s.depth, 'preview-label');
     lbl.setAttribute('font-size', fs);
     Gshaft.appendChild(lbl);
+
+    // When selected: draw paired dim lines from each wall corner to the shaft
+    // edges along the shaft's wall, with editable inputs for both distances.
+    if(sel){
+      const wp = wallPath(s.wall, scale, pad);
+      const a = wp.a, b = wp.b;
+      const wpLen = Math.hypot(b.x-a.x, b.y-a.y);
+      const ux = (b.x-a.x)/wpLen, uy = (b.y-a.y)/wpLen;
+      // Outward normal: from room center toward wall midpoint
+      const cxR = pad + r.length*scale/2, cyR = pad + r.width*scale/2;
+      const wmx = (a.x+b.x)/2, wmy = (a.y+b.y)/2;
+      let outX = wmx - cxR, outY = wmy - cyR;
+      const oLen = Math.hypot(outX, outY) || 1;
+      outX /= oLen; outY /= oLen;
+      const dim = 22;
+      const oX = outX*dim, oY = outY*dim;
+      const sxA = a.x + ux*s.offsetAlong*scale;
+      const syA = a.y + uy*s.offsetAlong*scale;
+      const sxB = a.x + ux*(s.offsetAlong + s.lenAlong)*scale;
+      const syB = a.y + uy*(s.offsetAlong + s.lenAlong)*scale;
+      // Dim line + ticks: a-corner → shaft start
+      Ga.appendChild(ml({x:a.x+oX, y:a.y+oY}, {x:sxA+oX, y:syA+oY}, 'od'));
+      Ga.appendChild(ml({x:a.x, y:a.y}, {x:a.x+oX, y:a.y+oY}, 'ot'));
+      Ga.appendChild(ml({x:sxA, y:syA}, {x:sxA+oX, y:syA+oY}, 'ot'));
+      // Dim line + ticks: shaft end → b-corner
+      Ga.appendChild(ml({x:sxB+oX, y:syB+oY}, {x:b.x+oX, y:b.y+oY}, 'od'));
+      Ga.appendChild(ml({x:sxB, y:syB}, {x:sxB+oX, y:syB+oY}, 'ot'));
+      Ga.appendChild(ml({x:b.x, y:b.y}, {x:b.x+oX, y:b.y+oY}, 'ot'));
+      // Editable distance inputs at the midpoint of each dim line
+      const wallLen = wallLengthOf(s.wall);
+      const d1 = s.offsetAlong;
+      const d2 = wallLen - s.offsetAlong - s.lenAlong;
+      Gedit.appendChild(makeInlineInput(
+        (a.x + sxA)/2 + oX, (a.y + syA)/2 + oY,
+        d1, v => applyShaftDist(s.id, 'start', v),
+        {width:54, height:22}));
+      Gedit.appendChild(makeInlineInput(
+        (sxB + b.x)/2 + oX, (syB + b.y)/2 + oY,
+        d2, v => applyShaftDist(s.id, 'end', v),
+        {width:54, height:22}));
+    }
   }
 
   // walls
@@ -1533,6 +1574,16 @@ function applyThrDist(side, value){
   render();
 }
 
+function applyShaftDist(shaftId, side, value){
+  if(isNaN(value) || value<0) return;
+  const s = state.shafts.find(x => x.id === shaftId); if(!s) return;
+  const wallLen = wallLengthOf(s.wall);
+  const newOff = (side === 'start') ? value : (wallLen - value - s.lenAlong);
+  if(newOff < 0 || newOff + s.lenAlong > wallLen) return;
+  s.offsetAlong = Math.round(newOff);
+  render();
+}
+
 function applyWallLen(name, cm){
   if(isNaN(cm)||cm<30||cm>2000) return;
   if(name==='W1'||name==='W3') state.room.length = Math.round(cm);
@@ -1835,28 +1886,20 @@ function renderTilePreview(){
   const r=state.room;
   const fullH = r.wallHeight;
   const installH_pre = Math.min(state.room.installHeight, fullH);
-  // Build the unified spec list: 4 room walls (with opening + shaft holes) plus
-  // every visible shaft face. Both kinds share tiling rules and contribute to
-  // perimeter length.
+  // Build the unified spec list: just the 4 room walls. Pipe shafts are NOT
+  // pulled out as separate wall faces; instead their footprint on the wall
+  // gets tiled in place with a recolored class so users can see the shaft
+  // area without the visual disruption of a separate section.
   const wallSpecs = [];
   ['W1','W2','W3','W4'].forEach(name => {
     const oHoles = openingsOnWall(name).filter(o => o.bottom < installH_pre).map(o => ({
       x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH_pre-o.bottom)
     }));
-    const sHoles = shaftSegmentsOnWall(name).map(seg => ({
-      x:seg.left, y:0, w:seg.width, h:installH_pre
-    }));
     wallSpecs.push({
       name, label:name, length:wallLengthOf(name),
-      holes:[...oHoles, ...sHoles],
+      holes:oHoles,
       offsetX:state.tiles.offsetX[name] || 0,
-      isShaft:false
-    });
-  });
-  shaftVisibleFaces().forEach(face => {
-    wallSpecs.push({
-      name:face.label, label:face.label, length:face.length,
-      holes:[], offsetX:0, isShaft:true
+      shaftSegs:shaftSegmentsOnWall(name)
     });
   });
   const totalLen = wallSpecs.reduce((acc, ws) => acc + ws.length, 0);
@@ -1902,11 +1945,17 @@ function renderTilePreview(){
     const tiles = wallTilesByName[spec.name];
     // wall outline
     svgW.appendChild(mr({x:ox, y:pad, width:wallLen*scaleW, height:fullH*scaleW, fill:'none', stroke:'var(--border2)', 'stroke-width':1}));
+    const shaftSegs = spec.shaftSegs || [];
+    function inShaft(p){
+      const cx = p.x + p.w/2;
+      return shaftSegs.some(seg => cx >= seg.left && cx <= seg.left + seg.width);
+    }
     // tiles (yflip: bottom = high y)
     for(const t of tiles){
       for(const p of t.pieces){
         const py = (fullH - p.y - p.h)*scaleW;
-        svgW.appendChild(mr({x:ox+p.x*scaleW, y:pad+py, width:p.w*scaleW, height:p.h*scaleW}, 'tile'+(t.full?'':' cut')));
+        const cls = 'tile'+(t.full?'':' cut')+(inShaft(p)?' shaft':'');
+        svgW.appendChild(mr({x:ox+p.x*scaleW, y:pad+py, width:p.w*scaleW, height:p.h*scaleW}, cls));
       }
       if(t.pieces.length){
         const main = t.pieces.reduce((a,p) => p.w*p.h > a.w*a.h ? p : a);
@@ -1928,29 +1977,12 @@ function renderTilePreview(){
       {x:ox, y:pad+(fullH-installH)*scaleW},
       {x:ox+wallLen*scaleW, y:pad+(fullH-installH)*scaleW},
       'install-line'));
-    // openings + shaft markers — only on real room walls
-    if(!spec.isShaft){
-      openingsOnWall(spec.name).forEach(o => {
-        const ox2 = ox + o.left*scaleW;
-        const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
-        svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
-      });
-      shaftSegmentsOnWall(spec.name).forEach(seg => {
-        const sx = ox + seg.left*scaleW;
-        const sy = pad + (fullH-installH)*scaleW;
-        const sw = seg.width*scaleW;
-        const sh = installH*scaleW;
-        svgW.appendChild(mr({x:sx, y:sy, width:sw, height:sh}, 'preview-shaft'));
-        svgW.appendChild(ml({x:sx, y:sy}, {x:sx+sw, y:sy+sh}, 'preview-shaft-hatch'));
-        svgW.appendChild(ml({x:sx+sw, y:sy}, {x:sx, y:sy+sh}, 'preview-shaft-hatch'));
-      });
-    }
-    // wall-face label above (only useful for shaft faces; W1-W4 are positional)
-    if(spec.isShaft){
-      const lbl = mt(ox + wallLen*scaleW/2, pad - 6, spec.label, 'preview-label');
-      lbl.setAttribute('font-size', '10');
-      svgW.appendChild(lbl);
-    }
+    // openings (shaft regions are already shown via recolored tiles, no overlay)
+    openingsOnWall(spec.name).forEach(o => {
+      const ox2 = ox + o.left*scaleW;
+      const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
+      svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
+    });
     // width dim below this wall
     drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, wallLen, scaleW,
                  state.tiles.wallW, state.tiles.wallH, grout(),
@@ -2153,16 +2185,9 @@ function updateStats(allTiles){
   const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
   const r=state.room;
   const thr=thresholdRect();
-  // Wall area: perimeter × installHeight, minus shaft hides on room walls,
-  // plus the shaft's own visible inward-facing faces (which now also get tiled).
-  let shaftHiddenCm2 = 0, shaftAddedCm2 = 0;
-  for(const s of state.shafts){
-    for(const seg of shaftWallSegments(s)) shaftHiddenCm2 += seg.width * state.room.installHeight;
-  }
-  for(const face of shaftVisibleFaces()){
-    shaftAddedCm2 += face.length * state.room.installHeight;
-  }
-  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftHiddenCm2 + shaftAddedCm2) / 10000;
+  // Wall area = perimeter × installHeight. Shaft regions are shown in-place
+  // on the room walls (recolored tiles), so the area accounting is unchanged.
+  const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
   // Floor area = room minus threshold and all shaft footprints
   let shaftFloorCm2 = 0;
   for(const s of state.shafts){
