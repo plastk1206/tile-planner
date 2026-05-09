@@ -1,0 +1,2512 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<!-- internal version: v32 (production: hide version from UI) -->
+<title>浴室磁磚計畫</title>
+<style>
+:root{
+  --bg:#fafaf7;--bg2:#f1efe8;--fg:#1a1a1a;--muted:#6b6b6b;--hint:#9b9b9b;
+  --line:#1a1a1a;--info:#185fa5;--info-bg:#e6f1fb;--danger:#a32d2d;
+  --warn:#a86b1f;--warn-bg:#fff4dd;
+  --border:rgba(0,0,0,.15);--border2:rgba(0,0,0,.3);--card:#fff;
+  --tile-fill:#f5ecd8;--tile-cut:#e6d3a6;--tile-line:#a08a55;
+  --floor-fill:#dcd0bb;--floor-cut:#c8b896;
+  --r-md:8px;--r-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1c1c1c;--bg2:#262624;--fg:#f0f0f0;--muted:#a0a0a0;--hint:#777;
+    --line:#f0f0f0;--info:#85b7eb;--info-bg:#0c447c;--danger:#f09595;--warn:#e9b67f;--warn-bg:#3a2a14;
+    --border:rgba(255,255,255,.18);--border2:rgba(255,255,255,.35);--card:#262624;
+    --tile-fill:#2a2620;--tile-cut:#3d3424;--tile-line:#7a6840;
+    --floor-fill:#2c2820;--floor-cut:#3a3528;}
+}
+/* Forced light theme — overrides system dark preference */
+html[data-theme="light"]{
+  --bg:#fafaf7;--bg2:#f1efe8;--fg:#1a1a1a;--muted:#6b6b6b;--hint:#9b9b9b;
+  --line:#1a1a1a;--info:#185fa5;--info-bg:#e6f1fb;--danger:#a32d2d;
+  --warn:#a86b1f;--warn-bg:#fff4dd;
+  --border:rgba(0,0,0,.15);--border2:rgba(0,0,0,.3);--card:#fff;
+  --tile-fill:#f5ecd8;--tile-cut:#e6d3a6;--tile-line:#a08a55;
+  --floor-fill:#dcd0bb;--floor-cut:#c8b896;
+}
+/* Forced dark theme — overrides system light preference */
+html[data-theme="dark"]{
+  --bg:#1c1c1c;--bg2:#262624;--fg:#f0f0f0;--muted:#a0a0a0;--hint:#777;
+  --line:#f0f0f0;--info:#85b7eb;--info-bg:#0c447c;--danger:#f09595;--warn:#e9b67f;--warn-bg:#3a2a14;
+  --border:rgba(255,255,255,.18);--border2:rgba(255,255,255,.35);--card:#262624;
+  --tile-fill:#2a2620;--tile-cut:#3d3424;--tile-line:#7a6840;
+  --floor-fill:#2c2820;--floor-cut:#3a3528;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1480px;margin:0 auto;padding:14px}
+.head{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;gap:10px;flex-wrap:wrap}
+h1{font-size:16px;font-weight:500;margin:0}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{height:32px;padding:0 10px;font-size:12px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:var(--r-md);cursor:pointer}
+.actions button:active{background:var(--bg2)}
+
+.settings{display:flex;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+.fs{flex:1;min-width:260px;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 12px}
+.fs h3{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row+.row{margin-top:6px}
+.row label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.row input{height:34px;width:60px;font-size:14px;border:.5px solid var(--border2);border-radius:6px;padding:0 8px;background:var(--card);color:var(--fg);-webkit-appearance:none;text-align:center}
+.row input:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.x{color:var(--hint);font-size:13px}
+
+.tools{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+.tools button{height:34px;padding:0 12px;font-size:13px;background:var(--card);color:var(--fg);border:.5px solid var(--border2);border-radius:var(--r-md);cursor:pointer;white-space:nowrap}
+.tools button:active{background:var(--bg2)}
+.tools button.active.op-mode{background:var(--info);color:#fff;border-color:var(--info)}
+.tools button.active.thr-mode{background:var(--warn);color:#fff;border-color:var(--warn)}
+
+.cv{background:var(--bg2);border-radius:var(--r-lg);padding:14px;position:relative;transition:background .15s,outline-color .15s}
+.cv.adding-op{background:var(--info-bg);outline:2px dashed var(--info);outline-offset:-6px}
+.cv.adding-thr{background:var(--warn-bg);outline:2px dashed var(--warn);outline-offset:-6px}
+.cv svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.cv.adding-op svg,.cv.adding-thr svg{cursor:crosshair}
+
+.wall{stroke:var(--line);stroke-width:7;stroke-linecap:round;pointer-events:none}
+.wall.sel{stroke:var(--info);stroke-width:9}
+.cv.adding-op .wall{stroke:var(--info);opacity:.85}
+.wh{stroke:transparent;stroke-width:30;cursor:pointer}
+.cv.adding-op .wh{cursor:crosshair}
+.oh{stroke:transparent;stroke-width:24;cursor:grab;touch-action:none}
+body.dragging .oh,body.dragging .thr-rect{cursor:grabbing}
+.cv.adding-op .oh{pointer-events:none}
+.dl{font-size:13px;fill:var(--muted);pointer-events:none;user-select:none}
+.dl.sel{fill:var(--info);font-weight:500}
+.ol{font-size:11.5px;fill:var(--hint);pointer-events:none;user-select:none}
+.ol.sel{fill:var(--info);font-weight:500}
+.cd{fill:var(--card);stroke:var(--line);stroke-width:1.5;pointer-events:none}
+.da{fill:none;stroke:var(--line);stroke-width:1.2;opacity:.55;pointer-events:none}
+.da.sel{stroke:var(--info);opacity:1;stroke-width:1.6}
+.dp{stroke:var(--line);stroke-width:2.5;opacity:.65;stroke-linecap:round;pointer-events:none}
+.dp.sel{stroke:var(--info);opacity:1}
+.wn{stroke:var(--line);stroke-width:2;opacity:.6;pointer-events:none}
+.wn.sel{stroke:var(--info);opacity:1;stroke-width:2.5}
+.od{stroke:var(--info);stroke-width:1;pointer-events:none;opacity:.85}
+.ot{stroke:var(--info);stroke-width:1;pointer-events:none;opacity:.55}
+.am{fill:var(--info);stroke:var(--card);stroke-width:2;pointer-events:none}
+.op-preview{stroke:var(--info);stroke-width:6;stroke-linecap:round;opacity:.55;pointer-events:none}
+.thr-rect{fill:#c0a880;stroke:#80603a;stroke-width:1.5;cursor:grab;touch-action:none;opacity:.85}
+.thr-rect.sel{stroke-width:2.5;stroke:var(--warn)}
+.epF{fill:var(--info);stroke:var(--card);stroke-width:2;cursor:pointer;opacity:.92}
+.et{font-size:12px;font-weight:500;fill:var(--card);pointer-events:none;user-select:none}
+
+.dim-fo{overflow:visible}
+.dim-edit{background:var(--card);border:1.5px solid var(--info);border-radius:4px;height:100%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.dim-edit input{border:none;background:transparent;width:100%;height:100%;text-align:center;font-size:13px;color:var(--info);font-weight:600;padding:0 2px;outline:none;-webkit-appearance:none;font-family:-apple-system,sans-serif;min-width:0}
+.dim-edit input::-webkit-outer-spin-button,.dim-edit input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.dim-edit input[type=number]{-moz-appearance:textfield}
+.dim-edit input:focus{background:var(--info-bg)}
+.dim-edit-wall input{font-weight:700;font-size:14px}
+
+.pn{background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:14px;margin:10px 0}
+.pn h3{font-size:13px;font-weight:500;margin:0 0 10px}
+.pn .row input{width:80px}
+.pn select{height:34px;padding:0 10px;font-size:14px;border:.5px solid var(--border2);border-radius:6px;background:var(--card);color:var(--fg)}
+.pn .actions-row{display:flex;gap:8px;margin-top:10px}
+.pn .actions-row button{height:34px;padding:0 14px;font-size:13px;border:.5px solid var(--border2);border-radius:var(--r-md);background:transparent;color:var(--fg);cursor:pointer}
+.pn .del{color:var(--danger)}
+
+.tile-section{background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:12px;margin-top:12px}
+.tile-section h3{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.tile-section svg{display:block;width:100%;height:auto}
+
+.tile{fill:var(--tile-fill);stroke:var(--tile-line);stroke-width:.4}
+.tile.cut{fill:var(--tile-cut)}
+.ftile{fill:var(--floor-fill);stroke:var(--tile-line);stroke-width:.4}
+.ftile.cut{fill:var(--floor-cut)}
+.tile-num{font-size:8px;fill:var(--muted);pointer-events:none;user-select:none;text-anchor:middle;dominant-baseline:middle}
+.preview-opening{fill:var(--bg2);stroke:var(--info);stroke-width:1.2;stroke-dasharray:4 3}
+.preview-thr{fill:#c0a880;stroke:#80603a;stroke-width:1;opacity:.85}
+.preview-label{font-size:10px;fill:var(--muted);font-weight:500;text-anchor:middle}
+.install-line{stroke:var(--warn);stroke-width:.8;stroke-dasharray:5 3;opacity:.7}
+
+
+/* Dashboard layout (desktop) */
+.main-grid{display:grid;grid-template-columns:minmax(440px,1fr) minmax(560px,1.25fr);gap:14px;margin-top:10px;align-items:start}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.col .cv,.col .pn,.col .tile-section{margin:0}
+.tile-section h3{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tile-section h3 .pstats{margin-left:auto;display:flex;gap:14px;font-size:11px;color:var(--muted);font-weight:400}
+.tile-section h3 .pstats span{font-weight:500}
+.tile-section h3 .pstats strong{color:var(--info);font-weight:700;font-size:13px;margin-left:4px}
+.summary-bar{background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;display:flex;gap:24px;flex-wrap:wrap}
+.tile-section h3 .seg{display:inline-flex;gap:4px}
+.tile-section h3 .seg button{height:24px;padding:0 8px;font-size:11px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:5px;cursor:pointer;font-weight:400}
+.tile-section h3 .seg button.active{background:var(--line);color:var(--card);border-color:var(--line);font-weight:500}
+.tile-section h3 .seg button:hover{background:var(--bg2)}
+.tile-section h3 .seg button.active:hover{background:var(--line)}
+input[type="range"]{touch-action:none}
+
+.settings-compact{display:flex;gap:24px;flex-wrap:wrap;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:8px 14px;align-items:center}
+.settings-compact .grp{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.settings-compact .grp-lbl{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.settings-compact label{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin:0}
+.settings-compact .x{color:var(--hint);font-size:11px}
+.settings-compact input{width:46px;height:26px;font-size:12px;border:.5px solid var(--border2);border-radius:5px;padding:0 5px;background:var(--card);color:var(--fg);text-align:center;-webkit-appearance:none;font-weight:500}
+.settings-compact input:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.settings-compact input::-webkit-outer-spin-button,.settings-compact input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.settings-compact .unit{font-size:11px;color:var(--hint)}
+
+.plan-grid{display:grid;grid-template-columns:50px 1fr;grid-template-rows:30px 32px auto auto;gap:6px;align-items:stretch}
+.plan-grid > .fbond-ctrl{grid-column:1 / -1;grid-row:1;display:flex;align-items:center;gap:8px;padding-left:4px}
+.plan-grid > .fx-ctrl{grid-column:2;grid-row:2}
+.plan-grid > .fy-ctrl{grid-column:1;grid-row:3}
+.plan-grid > .plan-area{grid-column:2;grid-row:3;min-width:0}
+#tile-unfolded{--uf-wall-fill:rgba(110,160,210,0.25);--uf-wall-cut:rgba(150,200,130,0.40);--uf-floor-fill:rgba(180,205,220,0.30);--uf-floor-cut:rgba(155,200,150,0.30);--uf-stroke:rgba(0,0,0,0.40)}
+@media (prefers-color-scheme:dark){
+  #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--uf-wall-cut:rgba(140,200,140,0.32);--uf-floor-fill:rgba(140,170,200,0.24);--uf-floor-cut:rgba(140,200,140,0.25);--uf-stroke:rgba(255,255,255,0.40)}
+}
+html[data-theme="light"] #tile-unfolded{--uf-wall-fill:rgba(110,160,210,0.25);--uf-wall-cut:rgba(150,200,130,0.40);--uf-floor-fill:rgba(180,205,220,0.30);--uf-floor-cut:rgba(155,200,150,0.30);--uf-stroke:rgba(0,0,0,0.40)}
+html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--uf-wall-cut:rgba(140,200,140,0.32);--uf-floor-fill:rgba(140,170,200,0.24);--uf-floor-cut:rgba(140,200,140,0.25);--uf-stroke:rgba(255,255,255,0.40)}
+#tile-unfolded .uf-wall{fill:var(--uf-wall-fill);stroke:var(--uf-stroke);stroke-width:0.5;pointer-events:none}
+#tile-unfolded .uf-wall.cut{fill:var(--uf-wall-cut)}
+#tile-unfolded .uf-floor{fill:var(--uf-floor-fill);stroke:var(--uf-stroke);stroke-width:0.5;pointer-events:none}
+#tile-unfolded .uf-floor.cut{fill:var(--uf-floor-cut)}
+#tile-unfolded .uf-tile-num{fill:var(--fg);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle;opacity:0.65}
+#tile-unfolded .uf-floor-bound{fill:none;stroke:var(--line);stroke-width:1.5;pointer-events:none}
+#tile-unfolded .uf-wall-bound{fill:none;stroke:var(--border2);stroke-width:1;pointer-events:none}
+#tile-unfolded .uf-opening{fill:rgba(127,127,127,0.20);stroke:var(--info);stroke-width:1.2;stroke-dasharray:3 2;pointer-events:none}
+#tile-unfolded .uf-opening-label{fill:var(--info);font-weight:600;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+#tile-unfolded .uf-thr{fill:var(--warn-bg);stroke:var(--warn);stroke-width:1;pointer-events:none}
+#tile-unfolded .uf-wall-label{fill:var(--muted);font-weight:600;letter-spacing:0.04em;pointer-events:none;text-anchor:middle;dominant-baseline:middle}
+#tile-unfolded .uf-corner-label{fill:var(--hint);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle;opacity:0.7}
+/* ===== Print / PDF export ===== */
+#print-area{display:none}
+@media print{
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{
+    display:block;
+    position:absolute;
+    left:0;top:0;
+    width:100%;
+    background:white;
+    color:#1a1a1a;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Helvetica Neue",sans-serif;
+    padding:0;
+    margin:0;
+  }
+  #print-area .print-header{margin-bottom:8mm}
+  #print-area .print-header h1{font-size:14pt;font-weight:600;margin:0 0 2mm 0;color:#1a1a1a}
+  #print-area .print-header p{font-size:9pt;margin:1mm 0;color:#444}
+  #print-area .print-header .print-meta{color:#888;font-size:8pt;margin-top:1.5mm}
+  #print-area .print-body{display:flex;gap:8mm;align-items:flex-start}
+  #print-area .print-section{flex:1;min-width:0;page-break-inside:avoid}
+  #print-area .print-section h2{font-size:10pt;font-weight:500;color:#666;margin:0 0 3mm 0}
+  #print-area .print-section svg{display:block;width:100% !important;height:auto !important;max-height:170mm}
+  @page{size:A4 landscape;margin:12mm}
+}
+
+
+.tile-section h3 .bond-lbl{font-size:11px;color:var(--muted);font-weight:600}
+.tile-section h3 .wbond-select{height:22px;padding:0 4px;font-size:11px;border:.5px solid var(--border2);border-radius:4px;background:var(--card);color:var(--fg);cursor:pointer;font-weight:500}
+.tile-section h3 .wbond-select:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.plan-grid > .tools{grid-column:2;grid-row:4;margin:0;padding-top:6px}
+
+.fbond-ctrl .axis-lbl{font-size:11px;color:var(--muted);font-weight:700}
+.fbond-select{height:26px;padding:0 6px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer;font-weight:500}
+.unit-mm{font-size:10px;color:var(--muted);margin-left:2px;font-weight:500}
+.fbond-select:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+#canvas .plan-tile{fill:rgba(127,127,127,0.04);stroke:rgba(0,0,0,0.18);stroke-width:0.5;pointer-events:none}
+#canvas .plan-tile.cut{fill:rgba(60,140,255,0.08);stroke:rgba(60,140,255,0.5);stroke-dasharray:1.5,1;stroke-width:0.6}
+#canvas .plan-tile-num{font-size:7px;fill:rgba(0,0,0,0.55);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle}
+
+.floor-grid{display:grid;grid-template-columns:54px 1fr;grid-template-rows:34px auto;gap:6px;align-items:stretch}
+.fx-ctrl{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px}
+.fy-ctrl{grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 0}
+.f-svg{grid-column:2;grid-row:2;min-width:0}
+.fx-ctrl input[type=range],.fy-ctrl input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;margin:0}
+.fx-ctrl input[type=range]{flex:1;height:20px;min-width:60px}
+.fy-ctrl input[type=range]{writing-mode:vertical-lr;-webkit-appearance:slider-vertical;appearance:slider-vertical;width:20px;flex:1;min-height:200px}
+.fx-ctrl input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--bg2);border-radius:2px;border:.5px solid var(--border)}
+.fy-ctrl input[type=range]::-webkit-slider-runnable-track{width:4px;height:100%;background:var(--bg2);border-radius:2px;border:.5px solid var(--border)}
+.fx-ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--info);border-radius:50%;margin-top:-6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.fy-ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--info);border-radius:50%;margin-left:-6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.fx-ctrl input[type=range]::-moz-range-track{height:4px;background:var(--bg2);border-radius:2px;border:none}
+.fy-ctrl input[type=range]::-moz-range-track{width:4px;background:var(--bg2);border-radius:2px;border:none}
+.fx-ctrl input[type=range]::-moz-range-thumb,.fy-ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--info);border-radius:50%;border:none;cursor:pointer}
+.fx-ctrl .num,.fy-ctrl .num{width:46px;height:24px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;padding:0 4px;background:var(--card);color:var(--fg);text-align:center;-webkit-appearance:none}
+.fx-ctrl .num::-webkit-outer-spin-button,.fx-ctrl .num::-webkit-inner-spin-button,
+.fy-ctrl .num::-webkit-outer-spin-button,.fy-ctrl .num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fx-ctrl .num:focus,.fy-ctrl .num:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.fx-ctrl .axis-lbl,.fy-ctrl .axis-lbl{font-size:11px;color:var(--muted);font-weight:700}
+.fx-ctrl .unit,.fy-ctrl .unit{font-size:10px;color:var(--hint)}
+
+.summary-bar .val-pin{font-size:14px;font-weight:500;color:var(--muted);line-height:1.1;margin-top:4px}
+
+.summary-bar .it{display:flex;flex-direction:column;gap:1px;flex:1;min-width:78px}
+.summary-bar .lab{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.summary-bar .val{font-size:18px;font-weight:600;line-height:1.1}
+.summary-bar .sub{font-size:10px;color:var(--hint)}
+.cv svg{max-height:480px}
+.tile-section svg{max-height:none}
+
+.prev-tools{display:flex;gap:14px;align-items:center;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:8px 12px;flex-wrap:wrap}
+.prev-tools .lbl{font-size:12px;color:var(--muted);font-weight:500}
+.prev-tools .seg{display:inline-flex;gap:4px}
+.prev-tools .seg button{height:28px;padding:0 10px;font-size:12px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:6px;cursor:pointer}
+.prev-tools .seg button.active{background:var(--line);color:var(--card);border-color:var(--line)}
+.prev-tools .seg button:hover{background:var(--bg2)}
+.prev-tools .seg button.active:hover{background:var(--line)}
+.prev-tools input{height:28px;width:60px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;padding:0 6px;background:var(--card);color:var(--fg);text-align:center;-webkit-appearance:none}
+.prev-tools input:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.prev-tools .unit{font-size:11px;color:var(--hint);margin-left:-6px}
+
+.offset-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px}
+.offset-row .title{grid-column:1/-1;font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:-2px}
+.offset-item{display:flex;align-items:center;gap:8px}
+.offset-item .lbl{font-size:12px;color:var(--muted);font-weight:600;min-width:24px}
+.offset-item input[type=range]{flex:1;height:20px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;margin:0;min-width:60px}
+.offset-item input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--bg2);border-radius:2px;border:.5px solid var(--border)}
+.offset-item input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;background:var(--info);border-radius:50%;margin-top:-6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.offset-item input[type=range]::-moz-range-track{height:4px;background:var(--bg2);border-radius:2px;border:none}
+.offset-item input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--info);border-radius:50%;border:none;cursor:pointer}
+.offset-item input[type=number]{width:50px;height:26px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;padding:0 4px;background:var(--card);color:var(--fg);text-align:center;-webkit-appearance:none}
+.offset-item input[type=number]:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+.offset-item input[type=number]::-webkit-outer-spin-button,
+.offset-item input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.offset-item .unit{font-size:10px;color:var(--hint);min-width:14px}
+
+.dim-label{font-size:10px;fill:var(--muted);text-anchor:middle;dominant-baseline:middle;font-family:-apple-system,sans-serif;pointer-events:none;user-select:none}
+.dim-label.total{font-weight:600;fill:var(--fg);font-size:11px}
+.dim-line{stroke:var(--muted);stroke-width:.5;opacity:.55;fill:none}
+.dim-line.total{opacity:.85}
+.dim-tick{stroke:var(--muted);stroke-width:.5;opacity:.7}
+
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.stat{flex:1;min-width:130px;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 12px}
+.stat .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .val{font-size:22px;font-weight:600;margin-top:2px}
+.stat .sub{font-size:11px;color:var(--hint);margin-top:2px}
+
+.hint{font-size:12px;color:var(--hint);margin-top:6px;line-height:1.5}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="head">
+  <h1>浴室磁磚計畫</h1>
+  <div class="actions">
+    <button id="theme-toggle" title="切換主題">主題: 自動</button>
+    <button id="ex-pdf" title="列印 → 存為 PDF(向量、最穩定、跨瀏覽器)">匯出 PDF</button>
+    <button id="ex-png" title="匯出當前畫面為 PNG(平面圖 + 磁磚展開圖)">匯出 PNG</button>
+    <button id="ex-svg" title="匯出當前畫面為 SVG(向量,可在 Illustrator / Figma 編輯)">匯出 SVG</button>
+    <button id="ex-json">JSON</button>
+    <button id="im-json">載入</button>
+    <input type="file" id="fi" accept="application/json,.json"/>
+  </div>
+</div>
+
+<div class="settings-compact">
+  <div class="grp">
+    <span class="grp-lbl">房間</span>
+    <label>長 <input id="rl" type="number" inputmode="numeric" value="280"/></label>
+    <label>寬 <input id="rw" type="number" inputmode="numeric" value="180"/></label>
+    <label>牆高 <input id="rh" type="number" inputmode="numeric" value="270"/></label>
+    <label>鋪到 <input id="ih" type="number" inputmode="numeric" value="240"/></label>
+  </div>
+  <div class="grp">
+    <span class="grp-lbl">磁磚</span>
+    <label>牆 <input id="tww" type="number" inputmode="numeric" value="600"/><span class="x">×</span><input id="twh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span></label>
+    <label>地 <input id="tfw" type="number" inputmode="numeric" value="300"/><span class="x">×</span><input id="tfh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span></label>
+    <label>縫 <input id="grt" type="number" inputmode="numeric" value="3" step="0.5"/><span class="unit">mm</span></label>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="col">
+    <div class="cv" id="cv-container">
+      <div class="plan-grid">
+        <div class="fbond-ctrl">
+          <span class="axis-lbl">地磚貼法</span>
+          <select class="fbond-select">
+            <option value="aligned">對齊</option>
+            <option value="half">交丁 1/2</option>
+            <option value="third">交丁 1/3</option>
+          </select>
+        </div>
+        <div class="fx-ctrl">
+          <span class="axis-lbl">X →</span>
+          <input type="range" class="fx-slider" min="0" max="600" step="5" value="0"/>
+          <input type="number" class="num fx-num" inputmode="decimal" min="0" step="5" value="0"/>
+          <span class="unit">mm</span>
+        </div>
+        <div class="fy-ctrl">
+          <span class="axis-lbl">↓ Y</span>
+          <input type="range" class="fy-slider" min="0" max="600" step="5" value="0"/>
+          <input type="number" class="num fy-num" inputmode="decimal" min="0" step="5" value="0"/>
+          <span class="unit">mm</span>
+        </div>
+        <div class="plan-area">
+          <svg id="canvas" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <g id="g-w"></g><g id="g-tiles"></g><g id="g-walls"></g><g id="g-o"></g><g id="g-d"></g><g id="g-a"></g><g id="g-c"></g><g id="g-wh"></g><g id="g-oh"></g><g id="g-thr"></g><g id="g-add"></g><g id="g-edit"></g>
+          </svg>
+        </div>
+        <div class="tools">
+          <button id="add-d90">+ 門 90</button>
+          <button id="add-d75">+ 門 75</button>
+          <button id="add-win">+ 加窗</button>
+          <button id="add-thr">+ 門檻</button>
+          <button id="cancel-add" style="display:none;color:var(--danger);margin-left:auto">取消</button>
+        </div>
+      </div>
+    </div>
+
+<div class="pn" id="edit-panel" style="display:none">
+  <h3 id="ep-title">選取項目</h3>
+  <div id="ep-body"></div>
+</div>
+
+<div class="summary-bar">
+  <div class="it"><div class="lab">總全片</div><div class="val" id="s-full">—</div><div class="sub" id="s-full-sub"></div></div>
+  <div class="it"><div class="lab">總裁切</div><div class="val" id="s-cut">—</div><div class="sub" id="s-cut-sub"></div></div>
+  <div class="it"><div class="lab">總計</div><div class="val" id="s-total">—</div><div class="sub">片</div></div>
+  <div class="it"><div class="lab">估購</div><div class="val" id="s-buy">—</div><div class="sub" id="s-buy-sub">—</div></div>
+  <div class="it"><div class="lab">鋪貼面積</div><div class="val" id="s-area">—</div><div class="sub">m²</div><div class="val-pin" id="s-pin">—</div><div class="sub">坪</div></div>
+</div>
+
+</div>
+  <div class="col">
+    <div class="prev-tools">
+      <span class="lbl">切割</span>
+      <div class="seg" id="seg-cut">
+        <button data-cut="naive" class="active">標準</button>
+        <button data-cut="optimized">最佳化</button>
+      </div>
+    </div>
+    <div class="offset-row" id="offset-row">
+      <div class="title">起鋪點偏移</div>
+      <div class="offset-item" data-wall="W1">
+        <span class="lbl">W1</span>
+        <input type="range" min="0" max="600" step="5" value="0"/>
+        <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
+        <span class="unit">mm</span>
+      </div>
+      <div class="offset-item" data-wall="W2">
+        <span class="lbl">W2</span>
+        <input type="range" min="0" max="600" step="5" value="0"/>
+        <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
+        <span class="unit">mm</span>
+      </div>
+      <div class="offset-item" data-wall="W3">
+        <span class="lbl">W3</span>
+        <input type="range" min="0" max="600" step="5" value="0"/>
+        <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
+        <span class="unit">mm</span>
+      </div>
+      <div class="offset-item" data-wall="W4">
+        <span class="lbl">W4</span>
+        <input type="range" min="0" max="600" step="5" value="0"/>
+        <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
+        <span class="unit">mm</span>
+      </div>
+    </div>
+    <div class="tile-section">
+      <h3><span id="tile-view-title">牆面磁磚展開</span> <span class="pstats" id="walls-stats"></span><span class="bond-lbl">排版</span><div class="seg" id="seg-tile-view"><button data-view="walls" class="active" title="逐面牆攤平,方便比較尺寸">牆面</button><button data-view="unfolded" title="像紙盒平鋪展開,中央地板四周牆面,檢視磁磚對縫">紙盒</button></div><span class="bond-lbl">牆磚貼法</span><select class="wbond-select" title="牆磚的橫向錯位方式:對齊=同一條垂直縫;交丁=每排錯開">
+        <option value="aligned">對齊</option>
+        <option value="half">交丁 1/2</option>
+        <option value="third">交丁 1/3</option>
+      </select><span class="bond-lbl">標註</span><div class="seg" id="seg-dim">
+        <button data-dim="plain" class="active" title="牆面預覽尺寸標示:純數字,簡潔">純數字</button>
+        <button data-dim="arch" title="牆面預覽尺寸標示:建築風格,帶箭頭線">建築風</button>
+      </div></h3>
+  <svg id="tile-walls" xmlns="http://www.w3.org/2000/svg"></svg>
+  <svg id="tile-unfolded" xmlns="http://www.w3.org/2000/svg" style="display:none"></svg>
+</div>
+
+  </div>
+</div>
+
+<p class="hint">匯出三種格式:<strong>PDF(推薦)</strong>—走原生列印,選「儲存為 PDF」,向量、最穩定。<strong>PNG</strong>—2x DPI 點陣,適合貼進訊息 / 社群。<strong>SVG</strong>—向量,可在 Illustrator / Figma 編輯。三種都會強制淺色主題輸出,且自動排版「平面圖 + 當前磁磚展開」並排。PNG 修了 foreignObject 跟 data URL 載入問題,這版應該可以正常匯出。</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+
+// ===== Unit conversion (tile dims & offsets shown in mm; state stored in cm) =====
+const cmToMm = cm => Math.round((+cm || 0) * 100) / 10;  // round to 0.1mm precision
+const mmToCm = mm => (+mm || 0) / 10;
+
+// ===== Analytics event tracking (GoatCounter) =====
+// Silent no-op if GoatCounter not loaded (offline, blocked, or YOUR_GC_CODE unfilled).
+function gcEvent(name, title){
+  try {
+    if(typeof window.goatcounter !== 'undefined' && window.goatcounter.count){
+      window.goatcounter.count({path: name, title: title || name, event: true});
+    }
+  } catch(e){ /* never break the app due to analytics */ }
+}
+
+// ===== Theme management =====
+const THEME_KEY = 'tile-planner-theme';
+const THEME_ORDER = ['auto', 'light', 'dark'];
+const THEME_LABEL = { auto: '自動', light: '淺色', dark: '深色' };
+function applyTheme(t){
+  if(t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('theme-toggle');
+  if(btn) btn.textContent = '主題: ' + THEME_LABEL[t];
+}
+let _currentTheme = (function(){
+  try { return localStorage.getItem(THEME_KEY) || 'auto'; }
+  catch(e){ return 'auto'; }
+})();
+applyTheme(_currentTheme);
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(_currentTheme);  // sync button text after DOM ready
+  const btn = document.getElementById('theme-toggle');
+  if(btn) btn.addEventListener('click', () => {
+    _currentTheme = THEME_ORDER[(THEME_ORDER.indexOf(_currentTheme) + 1) % THEME_ORDER.length];
+    try { localStorage.setItem(THEME_KEY, _currentTheme); } catch(e){}
+    applyTheme(_currentTheme);
+  });
+});
+const SCALE = 1.0; // plan is in cm directly (1px = 1cm visually for simple sizing)
+
+// State
+let state = {
+  room: { length: 280, width: 180, wallHeight: 270, installHeight: 240 },
+  tiles: { wallW: 60, wallH: 30, floorW: 30, floorH: 30, groutMm: 3, bondMode: 'aligned', floorBondMode: 'aligned', dimStyle: 'plain', cuttingMode: 'naive', offsetX: { W1: 0, W2: 0, W3: 0, W4: 0 }, floorOffset: { x: 0, y: 0 } },
+  openings: [
+    { id:'D1', wall:'W2', type:'door',   width:75, height:200, left:30, bottom:0, hinge:'s', swing:'l' },
+    { id:'C1', wall:'W3', type:'window', width:90, height:60,  left:80, bottom:130 }
+  ],
+  threshold: null, // { width:6, axis:'y', offset:0 } when enabled
+  selected: null,  // {kind:'wall'|'opening'|'threshold', id}
+  oCnt: 100,
+  mode: 'edit'  // 'edit' | 'addOp' | 'addThr'
+};
+let pendingOp = null; // {type, width, height} when addOp mode
+let lastEditedField = null;
+
+const grout=()=>state.tiles.groutMm/10;
+
+// ===== Wall identification (W1=south/bottom, W2=west/left, W3=north/top, W4=east/right) =====
+function getWallByName(name){
+  // returns {name, length, openings:[...], a:'corner', b:'corner'}
+  const r = state.room;
+  if(name==='W1') return { name, length:r.length };
+  if(name==='W2') return { name, length:r.width };
+  if(name==='W3') return { name, length:r.length };
+  if(name==='W4') return { name, length:r.width };
+}
+function wallLengthOf(wallName){return getWallByName(wallName).length;}
+
+function openingsOnWall(wallName){
+  return state.openings.filter(o=>o.wall===wallName).map(o=>({
+    ...o,
+    sx: o.left, sy: o.bottom, sw: o.width, sh: o.height
+  }));
+}
+
+// ===== Tile algorithms =====
+function rectsOverlap(a,b){return !(a.x+a.w<=b.x||a.x>=b.x+b.w||a.y+a.h<=b.y||a.y>=b.y+b.h);}
+function subtractRect(rect,hole){
+  if(!rectsOverlap(rect,hole)) return [rect];
+  const pieces=[];
+  if(rect.y<hole.y) pieces.push({x:rect.x,y:rect.y,w:rect.w,h:hole.y-rect.y});
+  if(rect.y+rect.h>hole.y+hole.h) pieces.push({x:rect.x,y:hole.y+hole.h,w:rect.w,h:rect.y+rect.h-hole.y-hole.h});
+  const yT=Math.max(rect.y,hole.y),yB=Math.min(rect.y+rect.h,hole.y+hole.h);
+  if(yT<yB){
+    if(rect.x<hole.x) pieces.push({x:rect.x,y:yT,w:hole.x-rect.x,h:yB-yT});
+    if(rect.x+rect.w>hole.x+hole.w) pieces.push({x:hole.x+hole.w,y:yT,w:rect.x+rect.w-hole.x-hole.w,h:yB-yT});
+  }
+  return pieces;
+}
+function buildTiles(width,height,tw,th,gr,startNum,holes,bondMode,offsetX,offsetY){
+  bondMode = bondMode || 'aligned';
+  offsetX = offsetX || 0;
+  offsetY = offsetY || 0;
+  const tiles=[]; let num=startNum;
+  const stepX=tw+gr,stepY=th+gr;
+  // Plan B: offset value = desired cut tile width; convert to internal "first full tile" position
+  const offForY = offsetY > 0.001 ? (offsetY + gr) : 0;
+  const offModY = ((offForY % stepY) + stepY) % stepY;
+  let y = offModY;
+  while(y > 0) y -= stepY;
+  let row = 0;
+  while(y < height-0.001){
+    const tileTop = Math.max(0, y);
+    const tileBot = Math.min(height, y+th);
+    const h = tileBot - tileTop;
+    if(h <= 0.1){ y += stepY; row++; continue; }
+    const phase = (bondMode==='half') ? (row%2)*(tw/2) :
+                  (bondMode==='third') ? (row%3)*(tw/3) : 0;
+    const offForX = offsetX > 0.001 ? (offsetX + gr) : 0;
+    const offModX = ((offForX % stepX) + stepX) % stepX;
+    let x = offModX - phase;
+    while(x > 0) x -= stepX;
+    while(x < width-0.001){
+      const tileLeft = Math.max(0, x);
+      const tileRight = Math.min(width, x+tw);
+      const w = tileRight - tileLeft;
+      if(w<=0.1){ x += stepX; continue; }
+      const baseRect={x:tileLeft,y:tileTop,w,h};
+      let pieces=[baseRect];
+      for(const hole of holes){
+        const next=[];
+        for(const p of pieces) next.push(...subtractRect(p,hole));
+        pieces=next;
+      }
+      if(pieces.length===0){ x += stepX; continue; }
+      const isFull=(Math.abs(w-tw)<.01 && Math.abs(h-th)<.01 && pieces.length===1 &&
+                    Math.abs(pieces[0].w-w)<.01 && Math.abs(pieces[0].h-h)<.01);
+      const usedArea=pieces.reduce((a,p)=>a+p.w*p.h,0);
+      tiles.push({number:num++,full:isFull,pieces,usedArea,baseW:tw,baseH:th,baseRect});
+      x += stepX;
+    }
+    y += stepY;
+    row++;
+  }
+  return tiles;
+}
+
+// Number formatting: integer when whole, 1 decimal otherwise
+function fmt(n){
+  if(Math.abs(n - Math.round(n)) < 0.1) return String(Math.round(n));
+  return n.toFixed(1);
+}
+
+// Get tile width segments along a row (for dim annotations)
+function getRowSegments(wallLen, tileW, gr, bondMode, row, offsetX){
+  offsetX = offsetX || 0;
+  const phase = (bondMode==='half') ? (row%2)*(tileW/2) :
+                (bondMode==='third') ? (row%3)*(tileW/3) : 0;
+  const stepX = tileW + gr;
+  const offFor = offsetX > 0.001 ? (offsetX + gr) : 0;
+  const offMod = ((offFor % stepX) + stepX) % stepX;
+  const segments = [];
+  let x = offMod - phase;
+  while(x > 0) x -= stepX;
+  while(x < wallLen - 0.001){
+    const tileLeft = Math.max(0, x);
+    const tileRight = Math.min(wallLen, x+tileW);
+    const w = tileRight - tileLeft;
+    if(w > 0.1) segments.push({start:tileLeft, end:tileRight, width:w});
+    x += stepX;
+  }
+  return segments;
+}
+
+// Get tile height segments along a column
+function getColSegments(installH, tileH, gr, offsetY){
+  offsetY = offsetY || 0;
+  const stepY = tileH + gr;
+  const offFor = offsetY > 0.001 ? (offsetY + gr) : 0;
+  const offMod = ((offFor % stepY) + stepY) % stepY;
+  const segments = [];
+  let y = offMod;
+  while(y > 0) y -= stepY;
+  while(y < installH - 0.001){
+    const top = Math.max(0, y);
+    const bot = Math.min(installH, y+tileH);
+    const h = bot - top;
+    if(h > 0.1) segments.push({start:top, end:bot, height:h});
+    y += stepY;
+  }
+  return segments;
+}
+
+// Draw width annotation row(s) below a wall + total width dim
+function drawWidthDim(svg, baseX, topY, wallLen, scale, tileW, tileH, gr, bondMode, dimStyle, offsetX){
+  if(dimStyle === 'off') return;
+  offsetX = offsetX || 0;
+  const numRows = (bondMode==='aligned') ? 1 : (bondMode==='half') ? 2 : 3;
+  const rowH = (dimStyle==='arch') ? 20 : 14;
+  let yCur = topY;
+  for(let r=0; r<numRows; r++){
+    const segs = getRowSegments(wallLen, tileW, gr, bondMode, r, offsetX);
+    if(dimStyle==='arch'){
+      const dimY = yCur + 9;
+      svg.appendChild(ml({x:baseX, y:dimY},{x:baseX+wallLen*scale, y:dimY},'dim-line'));
+      // ticks at all segment boundaries
+      const bs = new Set(); bs.add(0); bs.add(wallLen);
+      for(const s2 of segs){ bs.add(s2.start); bs.add(s2.end); }
+      for(const b of bs){
+        svg.appendChild(ml({x:baseX+b*scale, y:dimY-3},{x:baseX+b*scale, y:dimY+3},'dim-tick'));
+      }
+      for(const s2 of segs){
+        const cx = baseX + ((s2.start+s2.end)/2)*scale;
+        svg.appendChild(mt(cx, dimY+11, fmt(s2.width), 'dim-label'));
+      }
+    } else {
+      for(const s2 of segs){
+        const cx = baseX + ((s2.start+s2.end)/2)*scale;
+        svg.appendChild(mt(cx, yCur+8, fmt(s2.width), 'dim-label'));
+      }
+    }
+    yCur += rowH;
+  }
+  // total
+  if(dimStyle==='arch'){
+    const dimY = yCur + 9;
+    svg.appendChild(ml({x:baseX, y:dimY},{x:baseX+wallLen*scale, y:dimY},'dim-line total'));
+    svg.appendChild(ml({x:baseX, y:dimY-3},{x:baseX, y:dimY+3},'dim-tick'));
+    svg.appendChild(ml({x:baseX+wallLen*scale, y:dimY-3},{x:baseX+wallLen*scale, y:dimY+3},'dim-tick'));
+    svg.appendChild(mt(baseX + wallLen*scale/2, dimY+11, fmt(wallLen), 'dim-label total'));
+  } else {
+    svg.appendChild(mt(baseX + wallLen*scale/2, yCur+8, fmt(wallLen), 'dim-label total'));
+  }
+}
+
+// Draw height annotation column on the left or right side of a wall
+function drawHeightDim(svg, dx, topY, fullH, installH, scale, side, tileH, gr, dimStyle, offsetY){
+  if(dimStyle === 'off') return;
+  offsetY = offsetY || 0;
+  const wallBottomY = topY + fullH * scale;
+  const tilesTopY = topY + (fullH - installH) * scale;
+  const segs = getColSegments(installH, tileH, gr, offsetY);
+  const tickDir = (side==='left') ? -1 : 1;
+  if(dimStyle==='arch'){
+    svg.appendChild(ml({x:dx, y:tilesTopY},{x:dx, y:wallBottomY},'dim-line'));
+    const bs = new Set(); bs.add(0); bs.add(installH);
+    for(const s2 of segs){ bs.add(s2.start); bs.add(s2.end); }
+    for(const b of bs){
+      const y = wallBottomY - b*scale;
+      svg.appendChild(ml({x:dx, y:y},{x:dx + tickDir*3, y:y},'dim-tick'));
+    }
+    for(const s2 of segs){
+      const cy = wallBottomY - ((s2.start+s2.end)/2)*scale;
+      svg.appendChild(mt(dx + tickDir*11, cy, fmt(s2.height), 'dim-label'));
+    }
+    const totalDx = dx + tickDir*22;
+    svg.appendChild(ml({x:totalDx, y:tilesTopY},{x:totalDx, y:wallBottomY},'dim-line total'));
+    svg.appendChild(ml({x:totalDx, y:tilesTopY},{x:totalDx + tickDir*3, y:tilesTopY},'dim-tick'));
+    svg.appendChild(ml({x:totalDx, y:wallBottomY},{x:totalDx + tickDir*3, y:wallBottomY},'dim-tick'));
+    svg.appendChild(mt(totalDx + tickDir*11, (tilesTopY+wallBottomY)/2, fmt(installH), 'dim-label total'));
+  } else {
+    for(const s2 of segs){
+      const cy = wallBottomY - ((s2.start+s2.end)/2)*scale;
+      svg.appendChild(mt(dx + tickDir*8, cy, fmt(s2.height), 'dim-label'));
+    }
+    svg.appendChild(mt(dx + tickDir*22, (tilesTopY+wallBottomY)/2, fmt(installH), 'dim-label total'));
+  }
+}
+function thresholdRect(){
+  const t=state.threshold; if(!t) return null;
+  const r=state.room;
+  if(t.axis==='y') return {x:t.offset, y:0, w:t.width, h:r.width};
+  return {x:0, y:t.offset, w:r.length, h:t.width};
+}
+function estimatePurchase(tiles,singleArea){
+  const fullCount=tiles.filter(t=>t.full).length;
+  const cutArea=tiles.filter(t=>!t.full).reduce((a,t)=>a+t.usedArea,0);
+  return fullCount + Math.ceil(cutArea/singleArea);
+}
+
+// Guillotine remnant pool packing: BFD with 2-cut layout choice.
+// Each cut tile is taken from either an existing remnant in the pool, or a new donor.
+// After cutting, up to 2 leftover remnants are added back to the pool.
+// Result: tiles sharing a donor get donorPos / donorCount / donorPrimaryNumber set.
+function packCutTiles(cutTiles, tileW, tileH){
+  // reset any previous pack data
+  cutTiles.forEach(t => { t.donorId = null; t.donorPos = null; t.donorCount = null; t.donorPrimaryNumber = null; });
+
+  // Sort needs by area, largest first
+  const needs = cutTiles.map(t => ({
+    tile: t,
+    w: t.baseRect.w,
+    h: t.baseRect.h
+  })).sort((a, b) => (b.w * b.h) - (a.w * a.h));
+
+  const remnants = [];  // pool: each {w, h, donorId}
+  let donorCount = 0;
+  const donorOccupants = {};  // donorId -> [tile, ...]
+  const minUseful = 1;  // cm: smaller pieces are discarded as scrap
+
+  for(const need of needs){
+    if(need.w > tileW + 0.01 || need.h > tileH + 0.01) continue;  // safety
+
+    // Best-fit: find smallest remnant in pool that fits this need
+    let bestIdx = -1, bestArea = Infinity;
+    for(let i = 0; i < remnants.length; i++){
+      const r = remnants[i];
+      if(r.w >= need.w - 0.01 && r.h >= need.h - 0.01){
+        const a = r.w * r.h;
+        if(a < bestArea){ bestArea = a; bestIdx = i; }
+      }
+    }
+
+    let donor, donorId;
+    if(bestIdx >= 0){
+      donor = remnants.splice(bestIdx, 1)[0];
+      donorId = donor.donorId;
+    } else {
+      donorCount++;
+      donorId = donorCount;
+      donor = { w: tileW, h: tileH, donorId };
+    }
+
+    // Track occupants
+    if(!donorOccupants[donorId]) donorOccupants[donorId] = [];
+    donorOccupants[donorId].push(need.tile);
+
+    // Compute the two layout options for cutting `need` out of `donor`
+    const W = donor.w, H = donor.h, w = need.w, h = need.h;
+    // Layout A: vertical cut first → vertical strip + offcut
+    const remA1 = { w: W - w, h: H };       // right: full-height strip
+    const remA2 = { w: w,     h: H - h };   // top of left strip
+    // Layout B: horizontal cut first → horizontal strip + offcut
+    const remB1 = { w: W,     h: H - h };   // top: full-width strip
+    const remB2 = { w: W - w, h: h };       // right of bottom strip
+
+    // Pick layout that preserves the larger single remnant
+    const maxA = Math.max(remA1.w * remA1.h, remA2.w * remA2.h);
+    const maxB = Math.max(remB1.w * remB1.h, remB2.w * remB2.h);
+    const newRems = (maxA >= maxB) ? [remA1, remA2] : [remB1, remB2];
+
+    for(const r of newRems){
+      if(r.w >= minUseful && r.h >= minUseful){
+        r.donorId = donorId;
+        remnants.push(r);
+      }
+    }
+  }
+
+  // Set donor info on tiles (deterministic numbering by tile.number ascending)
+  for(const did in donorOccupants){
+    const tiles = donorOccupants[did].sort((a, b) => a.number - b.number);
+    tiles.forEach((t, i) => {
+      t.donorPos = i + 1;
+      t.donorCount = tiles.length;
+      t.donorPrimaryNumber = tiles[0].number;
+    });
+  }
+
+  return { purchaseCount: donorCount, donorOccupants };
+}
+
+// Backward-compat alias (renderTilePreview & updateStats still call pairCutTiles)
+const pairCutTiles = packCutTiles;
+
+// ===== Plan rendering (top-down view, similar to v10) =====
+function planScale(){
+  const r=state.room;
+  const cv=$('cv-container');
+  const cw=cv?cv.clientWidth:600;
+  const targetW = Math.max(360, cw - 28);
+  const targetH = 460;
+  const pad = 50;
+  return Math.min((targetW - pad*2) / r.length, (targetH - pad*2) / r.width);
+}
+
+function ml(a,b,c){const l=document.createElementNS(NS,'line');l.setAttribute('x1',a.x);l.setAttribute('y1',a.y);l.setAttribute('x2',b.x);l.setAttribute('y2',b.y);l.setAttribute('class',c);return l;}
+function mc(x,y,r,c){const e=document.createElementNS(NS,'circle');e.setAttribute('cx',x);e.setAttribute('cy',y);e.setAttribute('r',r);e.setAttribute('class',c);return e;}
+function mt(x,y,t,c){const e=document.createElementNS(NS,'text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('class',c);e.setAttribute('text-anchor','middle');e.setAttribute('dominant-baseline','middle');e.textContent=t;return e;}
+function mr(attrs,c){const e=document.createElementNS(NS,'rect');for(const k in attrs)e.setAttribute(k,attrs[k]);if(c)e.setAttribute('class',c);return e;}
+
+function makeInlineInput(cx,cy,value,onApply,opts){
+  opts=opts||{};
+  const w=opts.width||56, h=opts.height||24;
+  const fo=document.createElementNS(NS,'foreignObject');
+  fo.setAttribute('x',cx-w/2); fo.setAttribute('y',cy-h/2);
+  fo.setAttribute('width',w); fo.setAttribute('height',h);
+  fo.setAttribute('class','dim-fo');
+  const div=document.createElement('div');
+  div.className='dim-edit'+(opts.wallStyle?' dim-edit-wall':'');
+  const input=document.createElement('input');
+  input.type='number'; input.inputMode='numeric'; input.pattern='[0-9]*';
+  input.value=Math.round(value);
+  input.addEventListener('focus',e=>{e.stopPropagation();setTimeout(()=>input.select(),0);});
+  input.addEventListener('click',e=>e.stopPropagation());
+  input.addEventListener('mousedown',e=>e.stopPropagation());
+  input.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+  input.addEventListener('blur',()=>onApply(parseFloat(input.value)));
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter') input.blur();
+    if(e.key==='Escape'){input.value=Math.round(value);input.blur();}
+  });
+  div.appendChild(input); fo.appendChild(div);
+  return fo;
+}
+
+// Plan coords: room is at (pad, pad) to (pad+L*scale, pad+W*scale)
+// W1 (south) = bottom edge, W2 (west) = left, W3 (north) = top, W4 (east) = right
+// In plan coords (svg), y goes DOWN, so W1 is at high y, W3 at low y.
+function wallPath(name, scale, pad){
+  const r=state.room;
+  const L=r.length*scale, W=r.width*scale;
+  if(name==='W1') return {a:{x:pad,y:pad+W}, b:{x:pad+L,y:pad+W}};
+  if(name==='W2') return {a:{x:pad,y:pad+W}, b:{x:pad,y:pad}};      // bottom-left up to top-left
+  if(name==='W3') return {a:{x:pad,y:pad}, b:{x:pad+L,y:pad}};      // top-left to top-right
+  if(name==='W4') return {a:{x:pad+L,y:pad}, b:{x:pad+L,y:pad+W}};  // top-right down to bottom-right
+}
+
+function renderPlan(floorData){
+  const svg=$('canvas');
+  const Gw=$('g-w'),Gtiles=$('g-tiles'),Gwalls=$('g-walls'),Go=$('g-o'),Gd=$('g-d'),Ga=$('g-a'),Gc=$('g-c'),
+        Gwh=$('g-wh'),Goh=$('g-oh'),Gthr=$('g-thr'),Gadd=$('g-add'),Gedit=$('g-edit');
+  [Gw,Gtiles,Gwalls,Go,Gd,Ga,Gc,Gwh,Goh,Gthr,Gadd,Gedit].forEach(g=>g.innerHTML='');
+
+  const r=state.room;
+  const scale=planScale();
+  const pad=50;
+  const svgW = r.length*scale + pad*2;
+  const svgH = r.width*scale + pad*2;
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.style.maxHeight = '480px';
+
+  // floor background
+  Gw.appendChild(mr({x:pad, y:pad, width:r.length*scale, height:r.width*scale, fill:'var(--bg)', stroke:'none'}));
+
+  // floor tiles (drawn before openings/threshold/etc — under everything but floor bg)
+  if(floorData && floorData.floorTiles){
+    for(const t of floorData.floorTiles){
+      for(const p of t.pieces){
+        Gtiles.appendChild(mr(
+          {x:pad+p.x*scale, y:pad+p.y*scale, width:p.w*scale, height:p.h*scale},
+          'plan-tile'+(t.full?'':' cut')
+        ));
+      }
+      if(t.pieces.length){
+        const main = t.pieces.reduce((a,p) => p.w*p.h > a.w*a.h ? p : a);
+        const minDimPx = Math.min(main.w, main.h) * scale;
+        const fs = Math.max(5, Math.min(8, minDimPx * 0.35));
+        let displayNum;
+        if(state.tiles.cuttingMode === 'optimized' && !t.full && t.donorCount > 1){
+          displayNum = t.donorPrimaryNumber + '-' + t.donorPos;
+        } else {
+          displayNum = String(t.number);
+        }
+        const numEl = mt(pad+(main.x+main.w/2)*scale, pad+(main.y+main.h/2)*scale, displayNum, 'plan-tile-num');
+        numEl.setAttribute('font-size', fs);
+        Gtiles.appendChild(numEl);
+      }
+    }
+  }
+
+  // threshold rect on floor (drawn beneath walls/openings)
+  if(state.threshold){
+    const t=thresholdRect();
+    const sel=state.selected && state.selected.kind==='threshold';
+    const tr=mr({x:pad+t.x*scale, y:pad+t.y*scale, width:t.w*scale, height:t.h*scale}, 'thr-rect'+(sel?' sel':''));
+    tr.dataset.thr='1';
+    Gthr.appendChild(tr);
+    Gthr.appendChild(mt(pad+(t.x+t.w/2)*scale, pad+(t.y+t.h/2)*scale, '門檻 '+t.w+'cm', 'preview-label'));
+
+    if(sel){
+      const ts=state.threshold;
+      const isY = ts.axis==='y';
+      const totalLen = isY ? r.length : r.width;
+      const d1 = ts.offset;
+      const d2 = totalLen - ts.offset - ts.width;
+      const tickH = 6;
+      if(isY){
+        // vertical strip; horizontal dim lines at midY
+        const midY = pad + r.width*scale/2;
+        const xW2 = pad;
+        const xL = pad + ts.offset*scale;
+        const xR = pad + (ts.offset+ts.width)*scale;
+        const xW4 = pad + r.length*scale;
+        // d1 line + ticks
+        Ga.appendChild(ml({x:xW2,y:midY},{x:xL,y:midY},'od'));
+        Ga.appendChild(ml({x:xW2,y:midY-tickH},{x:xW2,y:midY+tickH},'ot'));
+        Ga.appendChild(ml({x:xL,y:midY-tickH},{x:xL,y:midY+tickH},'ot'));
+        Gedit.appendChild(makeInlineInput((xW2+xL)/2, midY-14, d1,
+          v=>applyThrDist('start',v), {width:54,height:22}));
+        // d2 line + ticks
+        Ga.appendChild(ml({x:xR,y:midY},{x:xW4,y:midY},'od'));
+        Ga.appendChild(ml({x:xR,y:midY-tickH},{x:xR,y:midY+tickH},'ot'));
+        Ga.appendChild(ml({x:xW4,y:midY-tickH},{x:xW4,y:midY+tickH},'ot'));
+        Gedit.appendChild(makeInlineInput((xR+xW4)/2, midY-14, d2,
+          v=>applyThrDist('end',v), {width:54,height:22}));
+      } else {
+        // horizontal strip; vertical dim lines at midX
+        const midX = pad + r.length*scale/2;
+        const yW3 = pad;
+        const yT = pad + ts.offset*scale;
+        const yB = pad + (ts.offset+ts.width)*scale;
+        const yW1 = pad + r.width*scale;
+        Ga.appendChild(ml({x:midX,y:yW3},{x:midX,y:yT},'od'));
+        Ga.appendChild(ml({x:midX-tickH,y:yW3},{x:midX+tickH,y:yW3},'ot'));
+        Ga.appendChild(ml({x:midX-tickH,y:yT},{x:midX+tickH,y:yT},'ot'));
+        Gedit.appendChild(makeInlineInput(midX+30, (yW3+yT)/2, d1,
+          v=>applyThrDist('start',v), {width:54,height:22}));
+        Ga.appendChild(ml({x:midX,y:yB},{x:midX,y:yW1},'od'));
+        Ga.appendChild(ml({x:midX-tickH,y:yB},{x:midX+tickH,y:yB},'ot'));
+        Ga.appendChild(ml({x:midX-tickH,y:yW1},{x:midX+tickH,y:yW1},'ot'));
+        Gedit.appendChild(makeInlineInput(midX+30, (yB+yW1)/2, d2,
+          v=>applyThrDist('end',v), {width:54,height:22}));
+      }
+    }
+  }
+
+  // walls
+  ['W1','W2','W3','W4'].forEach(name=>{
+    const wp=wallPath(name,scale,pad);
+    const a=wp.a, b=wp.b;
+    const wp_dx=b.x-a.x, wp_dy=b.y-a.y;
+    const wpLen=Math.hypot(wp_dx,wp_dy);
+    const ux=wp_dx/wpLen, uy=wp_dy/wpLen;
+    const sw = state.selected && state.selected.kind==='wall' && state.selected.id===name;
+
+    // gaps from openings
+    const ops=openingsOnWall(name).map(o=>({
+      sp:o.left*scale, ep:(o.left+o.width)*scale, op:o
+    })).sort((p,q)=>p.sp-q.sp);
+
+    let cu=0;
+    ops.forEach(g=>{
+      if(g.sp>cu){
+        Gwalls.appendChild(ml({x:a.x+ux*cu,y:a.y+uy*cu},{x:a.x+ux*g.sp,y:a.y+uy*g.sp},'wall'+(sw?' sel':'')));
+      }
+      cu=Math.max(cu,g.ep);
+    });
+    if(cu<wpLen){
+      Gwalls.appendChild(ml({x:a.x+ux*cu,y:a.y+uy*cu},b,'wall'+(sw?' sel':'')));
+    }
+
+    // wall label or inline input for length
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const offNX=-uy*16, offNY=ux*16;
+    const lblPos = (name==='W1'||name==='W3') ? {x:mx, y:my+ (name==='W1'?20:-20)} : {x:mx+(name==='W2'?-22:22), y:my};
+    if(sw){
+      Gedit.appendChild(makeInlineInput(lblPos.x, lblPos.y, wallLengthOf(name),
+        v=>applyWallLen(name, v),
+        {wallStyle:true, width:64, height:26}));
+    } else {
+      Gd.appendChild(mt(lblPos.x, lblPos.y, name+' '+wallLengthOf(name)+' cm', 'dl'));
+    }
+
+    // wall hit area
+    const hit=ml(a,b,'wh'); hit.dataset.wname=name; Gwh.appendChild(hit);
+
+    // openings: draw door arc / window double line
+    ops.forEach(g=>{
+      const o=g.op;
+      const sx=a.x+ux*g.sp, sy=a.y+uy*g.sp;
+      const ex=a.x+ux*g.ep, ey=a.y+uy*g.ep;
+      const wpx=g.ep-g.sp;
+      const sl = state.selected && state.selected.kind==='opening' && state.selected.id===o.id;
+      if(o.type==='door'){
+        // door swing: hinge at start, swing 1/4 arc into the room (perpendicular into bathroom)
+        // perpendicular into room from wall a→b direction: (-uy, ux) rotated 90° CCW...
+        // For our walls (going CCW around room), perpendicular into room is (-uy, ux) for W1, but (-uy, ux) varies.
+        // Easier: swing inward = use (-uy, ux) consistent with floor inside
+        // Compute inward normal: point from wall midpoint toward room center
+        const cxR = pad + r.length*scale/2, cyR = pad + r.width*scale/2;
+        const wmx=(a.x+b.x)/2, wmy=(a.y+b.y)/2;
+        let inX = cxR - wmx, inY = cyR - wmy;
+        const inLen=Math.hypot(inX,inY)||1;
+        inX/=inLen; inY/=inLen;
+        // pick perpendicular that has positive dot with (inX,inY)
+        let pX=-uy, pY=ux;
+        if(pX*inX + pY*inY < 0){pX=uy; pY=-ux;}
+        // hinge based on hinge prop (default 's' = start of opening on this wall)
+        const hinge=o.hinge||'s', swing=o.swing||'l';
+        const hingeAtStart=(hinge==='s');
+        const hX=hingeAtStart?sx:ex, hY=hingeAtStart?sy:ey;
+        const fX=hingeAtStart?ex:sx, fY=hingeAtStart?ey:sy;
+        // swing 'l' = use computed inward (default), 'r' = opposite
+        const sgn = swing==='l' ? 1 : -1;
+        const ptX=hX+pX*sgn*wpx, ptY=hY+pY*sgn*wpx;
+        const cross=(fX-hX)*(ptY-hY)-(fY-hY)*(ptX-hX);
+        const sweep=cross>0?1:0;
+        const arc=document.createElementNS(NS,'path');
+        arc.setAttribute('d',`M ${fX.toFixed(2)},${fY.toFixed(2)} A ${wpx.toFixed(2)},${wpx.toFixed(2)} 0 0 ${sweep} ${ptX.toFixed(2)},${ptY.toFixed(2)}`);
+        arc.setAttribute('class','da'+(sl?' sel':''));
+        Go.appendChild(arc);
+        Go.appendChild(ml({x:hX,y:hY},{x:ptX,y:ptY},'dp'+(sl?' sel':'')));
+      } else {
+        const px=-uy*3, py=ux*3;
+        Go.appendChild(ml({x:sx+px,y:sy+py},{x:ex+px,y:ey+py},'wn'+(sl?' sel':'')));
+        Go.appendChild(ml({x:sx-px,y:sy-py},{x:ex-px,y:ey-py},'wn'+(sl?' sel':'')));
+      }
+      // opening label
+      const omx=(sx+ex)/2, omy=(sy+ey)/2;
+      const inX=-uy*18, inY=ux*18;
+      let lbl=(o.type==='door'?'門':'窗')+' '+o.width;
+      if(o.type==='window'&&o.bottom) lbl+=' 台'+o.bottom;
+      Go.appendChild(mt(omx-uy*18, omy+ux*18, lbl, 'ol'+(sl?' sel':'')));
+      // opening hit
+      const oh=ml({x:sx,y:sy},{x:ex,y:ey},'oh'); oh.dataset.oid=o.id; Goh.appendChild(oh);
+
+      // when selected: dim lines + inline editable left/right distances
+      if(sl){
+        const wallLen=wallLengthOf(name);
+        const leftCm=o.left, rightCm=wallLen-o.left-o.width;
+        const dim=24;
+        const oX=-uy*dim, oY=ux*dim;
+        const ds_l={x:a.x+oX,y:a.y+oY}, de_l={x:sx+oX,y:sy+oY};
+        Ga.appendChild(ml(ds_l,de_l,'od'));
+        Ga.appendChild(ml(a,ds_l,'ot'));
+        Ga.appendChild(ml({x:sx,y:sy},de_l,'ot'));
+        Gedit.appendChild(makeInlineInput(
+          (ds_l.x+de_l.x)/2-uy*9, (ds_l.y+de_l.y)/2+ux*9,
+          leftCm, v=>applyOpeningDist(o.id,'left',v),
+          {width:50, height:20}));
+
+        const ds_r={x:ex+oX,y:ey+oY}, de_r={x:b.x+oX,y:b.y+oY};
+        Ga.appendChild(ml(ds_r,de_r,'od'));
+        Ga.appendChild(ml({x:ex,y:ey},ds_r,'ot'));
+        Ga.appendChild(ml(b,de_r,'ot'));
+        Gedit.appendChild(makeInlineInput(
+          (ds_r.x+de_r.x)/2-uy*9, (ds_r.y+de_r.y)/2+ux*9,
+          rightCm, v=>applyOpeningDist(o.id,'right',v),
+          {width:50, height:20}));
+
+        Ga.appendChild(mc(a.x,a.y,4,'am'));
+        Ga.appendChild(mc(b.x,b.y,4,'am'));
+
+        // door swing toggle button (always inside the room, regardless of swing direction)
+        if(o.type==='door'){
+          const cxR = pad + r.length*scale/2, cyR = pad + r.width*scale/2;
+          const wmx=(a.x+b.x)/2, wmy=(a.y+b.y)/2;
+          let inX = cxR - wmx, inY = cyR - wmy;
+          const inLen=Math.hypot(inX,inY)||1;
+          inX/=inLen; inY/=inLen;
+          let pX=-uy, pY=ux;
+          if(pX*inX + pY*inY < 0){pX=uy; pY=-ux;}
+          const btnX = omx + pX*22, btnY = omy + pY*22;
+          const cycG=document.createElementNS(NS,'g');
+          cycG.style.cursor='pointer';
+          cycG.dataset.cycle=o.id;
+          cycG.appendChild(mc(btnX,btnY,11,'epF'));
+          const ic=mt(btnX,btnY,'↻','et'); ic.setAttribute('font-size','13');
+          cycG.appendChild(ic);
+          Ga.appendChild(cycG);
+        }
+      }
+    });
+  });
+
+  // wire interactions
+  Gwh.querySelectorAll('.wh').forEach(el=>{
+    el.addEventListener('click',e=>{
+      if(state.mode==='addOp') return;
+      if(state.mode==='addThr') return;
+      e.stopPropagation();
+      state.selected = {kind:'wall', id:el.dataset.wname};
+      render();
+    });
+  });
+  Gwh.querySelectorAll('.wh').forEach(el=>{
+    el.addEventListener('click',e=>{
+      if(state.mode==='addOp'){
+        e.stopPropagation();
+        const pt=svgPt(e); if(pt) addOpToWall(el.dataset.wname, pt);
+      }
+    },true);
+  });
+  Goh.querySelectorAll('.oh').forEach(el=>{
+    const oid=el.dataset.oid;
+    el.addEventListener('pointerdown', e => startOpDrag(e, oid));
+  });
+  Gthr.querySelectorAll('[data-thr]').forEach(el=>{
+    el.addEventListener('pointerdown', e => startThrDrag(e));
+  });
+  Ga.querySelectorAll('g[data-cycle]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const o=state.openings.find(x=>x.id===el.dataset.cycle); if(!o) return;
+      cycleDoor(o);
+      render();
+    });
+  });
+  // canvas-level click: addThr placement OR deselect on empty area
+  svg.addEventListener('click',e=>{
+    if(state.mode==='addThr'){
+      const pt=svgPt(e); if(!pt) return;
+      placeThreshold(pt, scale, pad);
+      return;
+    }
+    if(state.mode==='addOp') return;  // ignore in add-opening mode
+    // edit mode: empty area click deselects (wall/opening/threshold/cycle handlers
+    // call stopPropagation, so they never reach here)
+    if(state.selected){
+      state.selected = null;
+      render();
+    }
+  });
+}
+
+function svgPt(e){
+  const svg=$('canvas');
+  const pt=svg.createSVGPoint();
+  pt.x=e.clientX; pt.y=e.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm) return null;
+  return pt.matrixTransform(ctm.inverse());
+}
+
+// Project SVG point onto a named wall, return distance in cm from wall start (a)
+function projectOnWall(wallName, x, y){
+  const wp = wallPath(wallName, planScale(), 50);
+  const a = wp.a, b = wp.b;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy); if(len === 0) return 0;
+  const ux = dx/len, uy = dy/len;
+  const t = (x - a.x)*ux + (y - a.y)*uy;
+  return t / planScale();
+}
+
+// Drag state (global, document-level)
+let dragging = null;
+const DRAG_THRESH = 5;
+
+let _renderPending = null;
+function scheduleRender(){
+  if(_renderPending) return;
+  _renderPending = requestAnimationFrame(()=>{ _renderPending=null; render(); });
+}
+
+function startOpDrag(e, oid){
+  if(state.mode !== 'edit') return;
+  const op = state.openings.find(x => x.id === oid);
+  if(!op) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const pt = svgPt(e); if(!pt) return;
+  const projCm = projectOnWall(op.wall, pt.x, pt.y);
+  dragging = {
+    kind: 'opening',
+    opId: oid,
+    grabOffset: projCm - op.left,
+    startX: e.clientX, startY: e.clientY,
+    moved: false
+  };
+}
+
+function startThrDrag(e){
+  if(state.mode !== 'edit' || !state.threshold) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const pt = svgPt(e); if(!pt) return;
+  const r = state.room;
+  const scale = planScale();
+  const pad = 50;
+  const fx = (pt.x - pad)/scale, fy = (pt.y - pad)/scale;
+  const t = state.threshold;
+  const grabOff = (t.axis === 'y') ? (fx - t.offset) : (fy - t.offset);
+  dragging = {
+    kind: 'threshold',
+    grabOff,
+    startX: e.clientX, startY: e.clientY,
+    moved: false
+  };
+}
+
+// Single global pointer-move/up/cancel handlers
+document.addEventListener('pointermove', e => {
+  if(!dragging) return;
+  const dx = e.clientX - dragging.startX;
+  const dy = e.clientY - dragging.startY;
+  if(!dragging.moved && Math.hypot(dx, dy) < DRAG_THRESH) return;
+  if(!dragging.moved){
+    dragging.moved = true;
+    document.body.classList.add('dragging');
+  }
+  const pt = svgPt(e); if(!pt) return;
+  if(dragging.kind === 'opening'){
+    const op = state.openings.find(x => x.id === dragging.opId); if(!op) return;
+    const projCm = projectOnWall(op.wall, pt.x, pt.y);
+    let newLeft = Math.round(projCm - dragging.grabOffset);
+    const wallLen = wallLengthOf(op.wall);
+    newLeft = Math.max(0, Math.min(wallLen - op.width, newLeft));
+    if(op.left !== newLeft){
+      op.left = newLeft;
+      state.selected = {kind:'opening', id:op.id};
+      scheduleRender();
+    }
+  } else if(dragging.kind === 'threshold' && state.threshold){
+    const r = state.room;
+    const scale = planScale();
+    const pad = 50;
+    const fx = (pt.x - pad)/scale, fy = (pt.y - pad)/scale;
+    const t = state.threshold;
+    let newOff = Math.round(((t.axis === 'y') ? fx : fy) - dragging.grabOff);
+    const max = (t.axis === 'y') ? (r.length - t.width) : (r.width - t.width);
+    newOff = Math.max(0, Math.min(max, newOff));
+    if(t.offset !== newOff){
+      t.offset = newOff;
+      state.selected = {kind:'threshold'};
+      scheduleRender();
+    }
+  }
+});
+
+document.addEventListener('pointerup', e => {
+  if(!dragging) return;
+  document.body.classList.remove('dragging');
+  // Click semantics if not dragged
+  if(!dragging.moved){
+    if(dragging.kind === 'opening'){
+      const op = state.openings.find(x => x.id === dragging.opId);
+      if(op){
+        const isReSelected = state.selected && state.selected.kind === 'opening' && state.selected.id === op.id;
+        if(isReSelected && op.type === 'door'){ cycleDoor(op); }
+        else { state.selected = {kind:'opening', id:op.id}; }
+        render();
+      }
+    } else if(dragging.kind === 'threshold'){
+      state.selected = {kind:'threshold'};
+      render();
+    }
+  } else {
+    // After drag: ensure final render
+    render();
+  }
+  dragging = null;
+});
+
+document.addEventListener('pointercancel', () => {
+  if(!dragging) return;
+  document.body.classList.remove('dragging');
+  dragging = null;
+});
+
+function cycleDoor(o){
+  o.hinge=o.hinge||'s'; o.swing=o.swing||'l';
+  const cur=o.hinge+o.swing;
+  if(cur==='sl') o.swing='r';
+  else if(cur==='sr') o.hinge='e';
+  else if(cur==='er') o.swing='l';
+  else { o.hinge='s'; o.swing='l'; }
+}
+
+function rotateThreshold(){
+  const t=state.threshold; if(!t) return;
+  const r=state.room;
+  if(t.axis==='y'){
+    t.axis='x';
+    t.offset=Math.max(0, Math.round(r.width/2 - t.width/2));
+  } else {
+    t.axis='y';
+    t.offset=Math.max(0, Math.round(r.length/2 - t.width/2));
+  }
+}
+
+function ensureThresholdDefault(){
+  const r=state.room, w=6;
+  state.threshold={
+    axis:'y',
+    width:w,
+    offset: Math.max(0, Math.round(r.length/2 - w/2))
+  };
+}
+
+function applyThrDist(side, value){
+  if(isNaN(value) || value<0) return;
+  const t=state.threshold; if(!t) return;
+  const r=state.room;
+  const totalLen = (t.axis==='y') ? r.length : r.width;
+  let newOffset;
+  if(side==='start') newOffset = value;
+  else newOffset = totalLen - value - t.width;
+  if(newOffset<0 || newOffset+t.width>totalLen) return;
+  t.offset = Math.round(newOffset);
+  render();
+}
+
+function applyWallLen(name, cm){
+  if(isNaN(cm)||cm<30||cm>2000) return;
+  if(name==='W1'||name==='W3') state.room.length = Math.round(cm);
+  else state.room.width = Math.round(cm);
+  $('rl').value=state.room.length;
+  $('rw').value=state.room.width;
+  // clamp openings
+  for(const o of state.openings){
+    const wW=wallLengthOf(o.wall);
+    if(o.left + o.width > wW) o.left = Math.max(0, wW - o.width);
+  }
+  if(state.threshold){
+    const r=state.room;
+    if(state.threshold.axis==='y' && state.threshold.offset+state.threshold.width>r.length)
+      state.threshold.offset=Math.max(0,r.length-state.threshold.width);
+    if(state.threshold.axis==='x' && state.threshold.offset+state.threshold.width>r.width)
+      state.threshold.offset=Math.max(0,r.width-state.threshold.width);
+  }
+  render();
+}
+
+function applyOpeningDist(opId, kind, value){
+  if(isNaN(value)||value<0) return;
+  const o=state.openings.find(x=>x.id===opId); if(!o) return;
+  const wW=wallLengthOf(o.wall);
+  let newLeft;
+  if(kind==='left') newLeft=value;
+  else newLeft=wW-value-o.width;
+  if(newLeft<0||newLeft+o.width>wW) return;
+  o.left=Math.round(newLeft);
+  render();
+}
+
+function addOpToWall(wallName, pt){
+  if(!pendingOp) return;
+  const wp=wallPath(wallName, planScale(), 50);
+  const a=wp.a, b=wp.b;
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len;
+  const t=(pt.x-a.x)*ux + (pt.y-a.y)*uy;
+  const tCm=t/planScale();
+  const wallLen=wallLengthOf(wallName);
+  const w=pendingOp.width;
+  if(wallLen<w+10){alert('牆太短');exitMode();return;}
+  let left=Math.round(tCm-w/2);
+  left=Math.max(0, Math.min(wallLen-w, left));
+  state.oCnt++;
+  const id=(pendingOp.type==='door'?'D':'C')+state.oCnt;
+  const newOp={id, wall:wallName, type:pendingOp.type, width:w, height:pendingOp.height, left, bottom:pendingOp.bottom};
+  if(pendingOp.type==='door'){newOp.hinge='s'; newOp.swing='l';}
+  state.openings.push(newOp);
+  state.selected={kind:'opening', id};
+  exitMode();
+}
+
+function placeThreshold(pt, scale, pad){
+  const r=state.room;
+  const fx=(pt.x-pad)/scale, fy=(pt.y-pad)/scale;
+  if(fx<0||fx>r.length||fy<0||fy>r.width){exitMode();return;}
+  // detect closest wall to determine orientation/position
+  const dToW1=r.width-fy, dToW3=fy, dToW2=fx, dToW4=r.length-fx;
+  const m=Math.min(dToW1,dToW3,dToW2,dToW4);
+  const W=6;
+  if(m===dToW1){state.threshold={axis:'x', offset:r.width-W, width:W};} // along bottom
+  else if(m===dToW3){state.threshold={axis:'x', offset:0, width:W};} // along top
+  else if(m===dToW2){state.threshold={axis:'y', offset:0, width:W};} // along left
+  else {state.threshold={axis:'y', offset:r.length-W, width:W};} // along right
+  state.selected={kind:'threshold'};
+  exitMode();
+}
+
+function exitMode(){
+  state.mode='edit'; pendingOp=null;
+  $('cv-container').classList.remove('adding-op','adding-thr');
+  $('cancel-add').style.display='none';
+  ['add-d90','add-d75','add-win','add-thr'].forEach(id=>$(id).classList.remove('active','op-mode','thr-mode'));
+  render();
+}
+
+function enterAddOp(type, width, height, bottom, btnId){
+  exitMode();
+  state.mode='addOp';
+  pendingOp={type, width, height, bottom};
+  state.selected=null;
+  $('cv-container').classList.add('adding-op');
+  $('cancel-add').style.display='inline-block';
+  $(btnId).classList.add('active','op-mode');
+  render();
+}
+function enterAddThr(){
+  exitMode();
+  state.mode='addThr';
+  state.selected=null;
+  $('cv-container').classList.add('adding-thr');
+  $('cancel-add').style.display='inline-block';
+  $('add-thr').classList.add('active','thr-mode');
+  render();
+}
+
+// ===== Edit panel =====
+function renderEditPanel(){
+  const ep=$('edit-panel'), tit=$('ep-title'), body=$('ep-body');
+  if(!state.selected){ep.style.display='none';return;}
+  ep.style.display='block';
+  body.innerHTML='';
+  if(state.selected.kind==='wall'){
+    const name=state.selected.id;
+    tit.textContent=name+' ('+wallLengthOf(name)+' cm)';
+    body.innerHTML=`<p style="font-size:13px;color:var(--muted);margin:0">直接點 SVG 上的牆名數字編輯,或從上面「房間」設定改 ${(name==='W1'||name==='W3')?'長':'寬'}。</p>`;
+    return;
+  }
+  if(state.selected.kind==='threshold'){
+    const t=state.threshold;
+    if(!t){ep.style.display='none';return;}
+    const r=state.room;
+    const isY = t.axis==='y';
+    const totalLen = isY ? r.length : r.width;
+    const d1 = t.offset;
+    const d2 = totalLen - t.offset - t.width;
+    const lab1 = isY ? '離左' : '離上';
+    const lab2 = isY ? '離右' : '離下';
+    const dirLabel = isY ? '直立(平行短邊)' : '橫向(平行長邊)';
+    tit.textContent='人造石門檻 — '+dirLabel;
+    body.innerHTML=`
+      <div class="row">
+        <label>${lab1} <input id="thr-d1" type="number" value="${d1}"/></label>
+        <label>${lab2} <input id="thr-d2" type="number" value="${d2}"/></label>
+        <label>寬度 <input id="thr-w" type="number" value="${t.width}"/> cm</label>
+      </div>
+      <div class="actions-row">
+        <button id="thr-rotate">↻ 旋轉 90°</button>
+        <button id="thr-apply">套用</button>
+        <button class="del" id="thr-del">移除門檻</button>
+      </div>
+    `;
+    // two-way reactive preview
+    $('thr-d1').addEventListener('input',()=>{
+      const w=+$('thr-w').value, d=+$('thr-d1').value;
+      if(!isNaN(w)&&!isNaN(d)) $('thr-d2').value = totalLen-w-d;
+    });
+    $('thr-d2').addEventListener('input',()=>{
+      const w=+$('thr-w').value, d=+$('thr-d2').value;
+      if(!isNaN(w)&&!isNaN(d)) $('thr-d1').value = totalLen-w-d;
+    });
+    $('thr-w').addEventListener('input',()=>{
+      const w=+$('thr-w').value, d=+$('thr-d1').value;
+      if(!isNaN(w)&&!isNaN(d)) $('thr-d2').value = totalLen-w-d;
+    });
+    $('thr-rotate').onclick=()=>{ rotateThreshold(); render(); };
+    $('thr-apply').onclick=()=>{
+      const w=Math.max(1, +$('thr-w').value);
+      let d=Math.max(0, +$('thr-d1').value);
+      if(d+w>totalLen) d=Math.max(0, totalLen-w);
+      state.threshold={axis:t.axis, width:w, offset:d};
+      render();
+    };
+    $('thr-del').onclick=()=>{state.threshold=null; state.selected=null; render();};
+    return;
+  }
+  // opening
+  const o=state.openings.find(x=>x.id===state.selected.id);
+  if(!o){ep.style.display='none';return;}
+  const wW=wallLengthOf(o.wall);
+  const right=wW-o.left-o.width;
+  tit.textContent=o.id+'・'+(o.type==='door'?'門':'窗')+'・在 '+o.wall+' 上(牆 '+wW+'cm)';
+  const isWin=o.type==='window';
+  body.innerHTML=`
+    <div class="row">
+      <label>左距 <input id="op-l" type="number" value="${o.left}"/></label>
+      <label>右距 <input id="op-r" type="number" value="${right}"/></label>
+      <label>寬度 <input id="op-w" type="number" value="${o.width}"/></label>
+    </div>
+    <div class="row">
+      ${isWin
+        ? `<label>台度 <input id="op-b-or-h" type="number" value="${o.bottom}"/></label>
+           <label>窗高 <input id="op-h2" type="number" value="${o.height}"/></label>`
+        : `<label>門高 <input id="op-b-or-h" type="number" value="${o.height}"/></label>`
+      }
+    </div>
+    <div class="actions-row">
+      ${o.type==='door'?'<button id="op-cyc">↻ 換方向</button>':''}
+      <button class="del" id="op-del">刪除</button>
+    </div>
+  `;
+
+  // Live-apply: update state on every input event, preserve focus by skipping edit panel re-render
+  function applyOpFields(){
+    const wL = wallLengthOf(o.wall);
+    const newW = +$('op-w').value;
+    if(!isNaN(newW) && newW > 0) o.width = Math.max(1, Math.min(wL, newW));
+    const newLeft = +$('op-l').value;
+    if(!isNaN(newLeft)) o.left = Math.max(0, Math.min(wL - o.width, newLeft));
+    if(isWin){
+      const b = +$('op-b-or-h').value; if(!isNaN(b)) o.bottom = Math.max(0, b);
+      const h = +$('op-h2').value; if(!isNaN(h) && h > 0) o.height = Math.max(1, h);
+    } else {
+      const h = +$('op-b-or-h').value; if(!isNaN(h) && h > 0) o.height = Math.max(1, h);
+      o.bottom = 0;
+    }
+    // Sync the dependent right-distance display (don't touch the field user is typing in)
+    if(document.activeElement && document.activeElement.id !== 'op-r'){
+      $('op-r').value = wL - o.left - o.width;
+    }
+    render({skipEditPanel: true});
+  }
+
+  ['op-w', 'op-l', 'op-b-or-h', 'op-h2'].forEach(id => {
+    const el = $(id);
+    if(el) el.addEventListener('input', applyOpFields);
+  });
+
+  // op-r (right distance): edits convert to op-l (left = wallLen - width - right)
+  const opR = $('op-r');
+  if(opR){
+    opR.addEventListener('input', () => {
+      const wL = wallLengthOf(o.wall);
+      const w = +$('op-w').value || o.width;
+      const r = +opR.value;
+      if(!isNaN(r)){
+        const newL = Math.max(0, Math.min(wL - w, wL - w - r));
+        $('op-l').value = newL;
+      }
+      applyOpFields();
+    });
+  }
+
+  if(o.type==='door' && $('op-cyc')){
+    $('op-cyc').onclick=()=>{cycleDoor(o); render();};
+  }
+  $('op-del').onclick=()=>{
+    state.openings=state.openings.filter(x=>x.id!==o.id);
+    state.selected=null; render();
+  };
+}
+
+// ===== Tile preview rendering =====
+function renderTilePreview(){
+  // walls preview: 4 walls side by side
+  const svgW=$('tile-walls');
+  while(svgW.firstChild) svgW.removeChild(svgW.firstChild);
+  const r=state.room;
+  const totalLen = r.length*2 + r.width*2;
+  const fullH = r.wallHeight;
+  const pad=20, gap=14;
+  const ws=document.querySelector('.col:last-child');
+  const cw=ws?ws.clientWidth:720;
+  const dimsOn = state.tiles.dimStyle !== 'off';
+  const _numRows = (state.tiles.bondMode==='aligned') ? 1 : (state.tiles.bondMode==='half') ? 2 : 3;
+  const _rowH = (state.tiles.dimStyle==='arch') ? 20 : 14;
+  const _dimBotH = dimsOn ? ((_numRows + 1) * _rowH + 8) : 8;
+  const _dimSideW = dimsOn ? (state.tiles.dimStyle==='arch' ? 50 : 36) : 8;
+  const targetW = Math.max(420, cw - pad*2 - gap*3 - 28 - _dimSideW*2);
+  const scaleW = Math.min(targetW/totalLen, (280 - _dimBotH)/fullH);
+  const W = totalLen*scaleW + pad*2 + gap*3 + _dimSideW*2;
+  const H = fullH*scaleW + pad*2 + _dimBotH + 8;
+  svgW.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgW.style.maxHeight = '440px';
+
+  // Adjust dim sizing
+  const numDimRows = (state.tiles.bondMode==='aligned') ? 1 : (state.tiles.bondMode==='half') ? 2 : 3;
+  const dimRowH = (state.tiles.dimStyle==='arch') ? 20 : 14;
+  const dimBottomH = (numDimRows + 1) * dimRowH + 8;
+  const dimSideW = (state.tiles.dimStyle==='arch') ? 50 : 36;
+
+  let ox = pad + dimSideW;
+  const walls = ['W1','W2','W3','W4'];
+  let allWallTiles = [];
+  // Pre-pass: build all wall tiles so we can run pairing before drawing numbers
+  const wallTilesByName = {};
+  let nextWallNum = 1;  // Cumulative tile numbering across W1→W4
+  walls.forEach(name => {
+    const wallLen = wallLengthOf(name);
+    const installH = Math.min(state.room.installHeight, fullH);
+    const holes = openingsOnWall(name).filter(o => o.bottom < installH).map(o => ({
+      x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH-o.bottom)
+    }));
+    const tiles = buildTiles(wallLen, installH, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, holes, state.tiles.bondMode, state.tiles.offsetX[name] || 0);
+    nextWallNum += tiles.length;
+    wallTilesByName[name] = tiles;
+    allWallTiles = allWallTiles.concat(tiles);
+  });
+  // Run pairing on all wall cut tiles before drawing
+  const wallCuts0 = allWallTiles.filter(t => !t.full);
+  const wallPairResult = pairCutTiles(wallCuts0, state.tiles.wallW, state.tiles.wallH);
+
+  walls.forEach((name, idx) => {
+    const wallLen = wallLengthOf(name);
+    const installH = Math.min(state.room.installHeight, fullH);
+    const tiles = wallTilesByName[name];
+    // wall outline
+    svgW.appendChild(mr({x:ox, y:pad, width:wallLen*scaleW, height:fullH*scaleW, fill:'none', stroke:'var(--border2)', 'stroke-width':1}));
+    // tiles (yflip: bottom = high y)
+    for(const t of tiles){
+      for(const p of t.pieces){
+        const py = (fullH - p.y - p.h)*scaleW;
+        svgW.appendChild(mr({x:ox+p.x*scaleW, y:pad+py, width:p.w*scaleW, height:p.h*scaleW}, 'tile'+(t.full?'':' cut')));
+      }
+      if(t.pieces.length){
+        const main = t.pieces.reduce((a,p) => p.w*p.h > a.w*a.h ? p : a);
+        const minDimPx = Math.min(main.w, main.h) * scaleW;
+        const fs = Math.max(5, Math.min(8, minDimPx * 0.4));
+        let displayNum;
+        if(state.tiles.cuttingMode === 'optimized' && !t.full && t.donorCount > 1){
+          displayNum = t.donorPrimaryNumber + '-' + t.donorPos;
+        } else {
+          displayNum = String(t.number);
+        }
+        const numEl = mt(ox+(main.x+main.w/2)*scaleW, pad+(fullH-main.y-main.h/2)*scaleW, displayNum, 'tile-num');
+        numEl.setAttribute('font-size', fs);
+        svgW.appendChild(numEl);
+      }
+    }
+    // install line
+    svgW.appendChild(ml(
+      {x:ox, y:pad+(fullH-installH)*scaleW},
+      {x:ox+wallLen*scaleW, y:pad+(fullH-installH)*scaleW},
+      'install-line'));
+    // openings
+    openingsOnWall(name).forEach(o => {
+      const ox2 = ox + o.left*scaleW;
+      const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
+      svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
+    });
+    // width dim below this wall
+    drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, wallLen, scaleW,
+                 state.tiles.wallW, state.tiles.wallH, grout(),
+                 state.tiles.bondMode, state.tiles.dimStyle, state.tiles.offsetX[name] || 0);
+    // height dim only on outside of W1 (left) and W4 (right)
+    if(idx === 0){
+      drawHeightDim(svgW, ox - 6, pad, fullH, installH, scaleW, 'left',
+                    state.tiles.wallH, grout(), state.tiles.dimStyle);
+    }
+    ox += wallLen * scaleW;
+    if(idx === walls.length - 1){
+      drawHeightDim(svgW, ox + 6, pad, fullH, installH, scaleW, 'right',
+                    state.tiles.wallH, grout(), state.tiles.dimStyle);
+    }
+    ox += gap;
+  });
+
+  // Build floor tile data (for stats only — drawing happens in renderPlan via g-tiles)
+  const thr=thresholdRect();
+  const fHoles = thr ? [thr] : [];
+  const floorTiles=buildTiles(r.length, r.width, state.tiles.floorW, state.tiles.floorH, grout(), 1, fHoles, state.tiles.floorBondMode, state.tiles.floorOffset.x, state.tiles.floorOffset.y);
+  const floorCuts0 = floorTiles.filter(t => !t.full);
+  const floorPairResult = pairCutTiles(floorCuts0, state.tiles.floorW, state.tiles.floorH);
+
+  return {wallTiles:allWallTiles, wallTilesByName, floorTiles, wallPair: wallPairResult, floorPair: floorPairResult};
+}
+
+// ===== Unfolded box view =====
+// Floor in center, 4 walls splayed outward (like an open cardboard box).
+// Coordinate system (in cm, before scale):
+//   total area = (L + 2*H) × (W + 2*H), where H = installHeight
+//   floor occupies (H, H) to (H+L, H+W)
+//   W1 (bottom): unfolds DOWN, occupies (H, H+W) to (H+L, H+W+H)
+//   W3 (top): unfolds UP, occupies (H, 0) to (H+L, H), with vertical flip
+//   W2 (left): unfolds LEFT, rotated 90°
+//   W4 (right): unfolds RIGHT, rotated 90°
+function renderUnfolded(allTiles){
+  const svg = document.getElementById('tile-unfolded');
+  if(!svg) return;
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const r = state.room;
+  const L = r.length, W = r.width, H = r.installHeight;
+
+  // Layout dims (cm)
+  const totalCmW = L + 2*H;
+  const totalCmH = W + 2*H;
+
+  // Scale to fit container
+  const container = svg.parentElement || document.querySelector('.col:last-child');
+  const cwUF = container ? container.clientWidth : 700;
+  const padUF = 24;  // extra padding for outer wall labels
+  const targetW = Math.max(360, cwUF - padUF*2 - 28);
+  const targetH = 540;
+  const scale = Math.min(targetW / totalCmW, targetH / totalCmH);
+
+  const FW = totalCmW * scale + padUF*2;
+  const FH = totalCmH * scale + padUF*2;
+  svg.setAttribute('viewBox', `0 0 ${FW} ${FH}`);
+  svg.style.maxHeight = (targetH + padUF*2) + 'px';
+
+  const ox = padUF, oy = padUF;
+  const cmRect = (x, y, w, h, cls) => mr({x: ox + x*scale, y: oy + y*scale, width: w*scale, height: h*scale}, cls);
+  const cmText = (x, y, text, cls) => {
+    const e = mt(ox + x*scale, oy + y*scale, text, cls);
+    return e;
+  };
+
+  // Tile label helper (handles optimized-mode pairing)
+  function tileLabel(t, isFloor){
+    const prefix = isFloor ? 'F' : '';
+    if(state.tiles.cuttingMode === 'optimized' && !t.full && t.donorCount > 1){
+      return prefix + t.donorPrimaryNumber + '-' + t.donorPos;
+    }
+    return prefix + t.number;
+  }
+
+  // Generic tile + number drawer
+  function drawTileWithNum(tile, uX, uY, uW, uH, isFloor){
+    const cls = (isFloor ? 'uf-floor' : 'uf-wall') + (tile.full ? '' : ' cut');
+    svg.appendChild(cmRect(uX, uY, uW, uH, cls));
+    // Number text — sized based on rendered tile dimensions
+    const minPx = Math.min(uW, uH) * scale;
+    const fs = Math.max(4, Math.min(8, minPx * 0.32));
+    if(fs >= 4.5){
+      const numEl = cmText(uX + uW/2, uY + uH/2, tileLabel(tile, isFloor), 'uf-tile-num');
+      numEl.setAttribute('font-size', fs);
+      svg.appendChild(numEl);
+    }
+  }
+
+  // Transform wall-local tile → unfolded coords (returns {x,y,w,h} in cm)
+  function w1Tile(tx, ty, tw, th){ return {x: H + tx,            y: H + W + ty,             w: tw, h: th}; }
+  function w3Tile(tx, ty, tw, th){ return {x: H + tx,            y: H - ty - th,            w: tw, h: th}; }
+  function w2Tile(tx, ty, tw, th){ return {x: H - ty - th,       y: H + W - tx - tw,        w: th, h: tw}; }
+  function w4Tile(tx, ty, tw, th){ return {x: H + L + ty,        y: H + tx,                 w: th, h: tw}; }
+  const tileTransform = { W1: w1Tile, W2: w2Tile, W3: w3Tile, W4: w4Tile };
+
+  // ---------- WALL TILES ----------
+  if(allTiles && allTiles.wallTilesByName){
+    ['W1','W2','W3','W4'].forEach(name => {
+      const tiles = allTiles.wallTilesByName[name] || [];
+      const tx = tileTransform[name];
+      for(const t of tiles){
+        for(const p of t.pieces){
+          const u = tx(p.x, p.y, p.w, p.h);
+          drawTileWithNum(t, u.x, u.y, u.w, u.h, false);
+        }
+      }
+    });
+  }
+
+  // ---------- FLOOR TILES ----------
+  if(allTiles && allTiles.floorTiles){
+    for(const t of allTiles.floorTiles){
+      for(const p of t.pieces){
+        drawTileWithNum(t, H + p.x, H + p.y, p.w, p.h, true);
+      }
+    }
+  }
+
+  // ---------- OPENINGS ----------
+  function openingUnfolded(o){
+    const {wall, left, width, bottom, height} = o;
+    if(wall === 'W1') return {x: H + left,                y: H + W + bottom,         w: width, h: height};
+    if(wall === 'W3') return {x: H + left,                y: H - bottom - height,    w: width, h: height};
+    if(wall === 'W2') return {x: H - bottom - height,     y: H + W - left - width,   w: height, h: width};
+    if(wall === 'W4') return {x: H + L + bottom,          y: H + left,               w: height, h: width};
+    return null;
+  }
+  for(const o of state.openings){
+    const u = openingUnfolded(o);
+    if(!u) continue;
+    svg.appendChild(cmRect(u.x, u.y, u.w, u.h, 'uf-opening'));
+    // Opening label (Door / Window)
+    const labelText = o.type === 'door' ? '門' : '窗';
+    const labelEl = cmText(u.x + u.w/2, u.y + u.h/2, labelText, 'uf-opening-label');
+    labelEl.setAttribute('font-size', Math.max(8, Math.min(13, Math.min(u.w, u.h) * scale * 0.25)));
+    svg.appendChild(labelEl);
+  }
+
+  // ---------- THRESHOLD ----------
+  const thr = thresholdRect();
+  if(thr){
+    svg.appendChild(cmRect(H + thr.x, H + thr.y, thr.w, thr.h, 'uf-thr'));
+  }
+
+  // ---------- OUTLINES (last → on top) ----------
+  svg.appendChild(cmRect(H, H + W, L, H, 'uf-wall-bound'));   // W1
+  svg.appendChild(cmRect(H, 0, L, H, 'uf-wall-bound'));       // W3
+  svg.appendChild(cmRect(0, H, H, W, 'uf-wall-bound'));       // W2
+  svg.appendChild(cmRect(H + L, H, H, W, 'uf-wall-bound'));   // W4
+  svg.appendChild(cmRect(H, H, L, W, 'uf-floor-bound'));      // Floor
+
+  // ---------- WALL LENGTH LABELS (outside each wall region) ----------
+  // W1 below, W3 above, W2 to left, W4 to right
+  const lblFontSize = 12;
+  // W1 label below W1 region
+  const w1Lbl = cmText(H + L/2, H + W + H + 14/scale, `W1 ${L}cm`, 'uf-wall-label');
+  w1Lbl.setAttribute('font-size', lblFontSize);
+  svg.appendChild(w1Lbl);
+  // W3 label above W3 region
+  const w3Lbl = cmText(H + L/2, -14/scale, `W3 ${L}cm`, 'uf-wall-label');
+  w3Lbl.setAttribute('font-size', lblFontSize);
+  svg.appendChild(w3Lbl);
+  // W2 label to left of W2 region (rotated 90° CCW so it reads bottom-up)
+  const w2Lbl = mt(ox + (-14), oy + (H + W/2)*scale, `W2 ${W}cm`, 'uf-wall-label');
+  w2Lbl.setAttribute('font-size', lblFontSize);
+  w2Lbl.setAttribute('transform', `rotate(-90, ${ox + (-14)}, ${oy + (H + W/2)*scale})`);
+  svg.appendChild(w2Lbl);
+  // W4 label to right of W4 region (rotated 90° CW)
+  const w4Lbl = mt(ox + (H + L + H)*scale + 14, oy + (H + W/2)*scale, `W4 ${W}cm`, 'uf-wall-label');
+  w4Lbl.setAttribute('font-size', lblFontSize);
+  w4Lbl.setAttribute('transform', `rotate(90, ${ox + (H + L + H)*scale + 14}, ${oy + (H + W/2)*scale})`);
+  svg.appendChild(w4Lbl);
+  // Floor area label (small, in floor center)
+  const flLbl = cmText(H + L/2, H + W/2, `Floor ${L}×${W}cm`, 'uf-corner-label');
+  flLbl.setAttribute('font-size', Math.max(9, Math.min(13, Math.min(L, W) * scale * 0.04)));
+  svg.appendChild(flLbl);
+}
+
+// ===== Stats =====
+function updateStats(allTiles){
+  const wallTiles=allTiles.wallTiles, floorTiles=allTiles.floorTiles;
+  const wFull=wallTiles.filter(t=>t.full).length;
+  const wCut=wallTiles.length-wFull;
+  const fFull=floorTiles.filter(t=>t.full).length;
+  const fCut=floorTiles.length-fFull;
+  // Naive: each cut tile uses one donor
+  const wallBuyNaive = wFull + wCut;
+  const floorBuyNaive = fFull + fCut;
+  // Optimized: use pairing results
+  const wallBuyOpt = wFull + (allTiles.wallPair ? allTiles.wallPair.purchaseCount : wCut);
+  const floorBuyOpt = fFull + (allTiles.floorPair ? allTiles.floorPair.purchaseCount : fCut);
+  const totalNaive = wallBuyNaive + floorBuyNaive;
+  const totalOpt = wallBuyOpt + floorBuyOpt;
+  const savings = totalNaive - totalOpt;
+  const isOpt = state.tiles.cuttingMode === 'optimized';
+  const wBuy = isOpt ? wallBuyOpt : wallBuyNaive;
+  const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
+  const r=state.room;
+  const thr=thresholdRect();
+  const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
+  const floorArea = (r.length*r.width - (thr?thr.w*thr.h:0)) / 10000;
+  // totals
+  $('s-full').textContent = wFull+fFull;
+  $('s-full-sub').textContent = `牆${wFull} 地${fFull}`;
+  $('s-cut').textContent = wCut+fCut;
+  $('s-cut-sub').textContent = `牆${wCut} 地${fCut}`;
+  $('s-total').textContent = wallTiles.length+floorTiles.length;
+  $('s-buy').textContent = wBuy+fBuy;
+  // savings sub
+  const sBuySub = $('s-buy-sub');
+  if(sBuySub){
+    // Count shared-donor groups (size >= 2) for diagnostic
+    let sharedCount = 0;
+    if(allTiles.wallPair && allTiles.wallPair.donorOccupants){
+      for(const k in allTiles.wallPair.donorOccupants){
+        if(allTiles.wallPair.donorOccupants[k].length > 1) sharedCount++;
+      }
+    }
+    if(allTiles.floorPair && allTiles.floorPair.donorOccupants){
+      for(const k in allTiles.floorPair.donorOccupants){
+        if(allTiles.floorPair.donorOccupants[k].length > 1) sharedCount++;
+      }
+    }
+    if(savings <= 0){
+      sBuySub.textContent = '無共用原磚機會';
+    } else if(isOpt){
+      sBuySub.textContent = `省 ${savings} 片(${sharedCount} 片原磚共用)`;
+    } else {
+      sBuySub.textContent = `最佳化可省 ${savings} 片`;
+    }
+  }
+  const totalAreaM2 = wallArea + floorArea;
+  const totalAreaPin = totalAreaM2 / 3.30579;
+  $('s-area').textContent = totalAreaM2.toFixed(2);
+  $('s-pin').textContent = totalAreaPin.toFixed(2);
+  // per-preview inline
+  const ws=$('walls-stats'), fs=$('floor-stats');
+  if(ws) ws.innerHTML = `<span>全片<strong>${wFull}</strong></span><span>裁切<strong>${wCut}</strong></span><span>估購<strong>${wBuy}</strong></span><span>${wallArea.toFixed(2)} m²</span>`;
+  if(fs) fs.innerHTML = `<span>全片<strong>${fFull}</strong></span><span>裁切<strong>${fCut}</strong></span><span>估購<strong>${fBuy}</strong></span><span>${floorArea.toFixed(2)} m²</span>`;
+}
+
+// ===== Master render =====
+function render(opts){
+  opts = opts || {};
+  if(!opts.skipEditPanel) renderEditPanel();
+  // renderTilePreview computes floor data (without drawing); renderPlan draws floor in plan SVG
+  const all = renderTilePreview();
+  renderPlan({floorTiles: all.floorTiles, floorPair: all.floorPair});
+  renderUnfolded(all);
+  updateStats(all);
+}
+
+// ===== Settings sync =====
+function readSettings(){
+  state.room.length = +$('rl').value || 280;
+  state.room.width = +$('rw').value || 180;
+  state.room.wallHeight = +$('rh').value || 270;
+  state.room.installHeight = +$('ih').value || 240;
+  // tile inputs are mm; state is cm
+  state.tiles.wallW = mmToCm($('tww').value) || 60;
+  state.tiles.wallH = mmToCm($('twh').value) || 30;
+  state.tiles.floorW = mmToCm($('tfw').value) || 30;
+  state.tiles.floorH = mmToCm($('tfh').value) || 30;
+  state.tiles.groutMm = +$('grt').value || 0;
+  if(typeof syncOffsetMax === 'function') syncOffsetMax();
+  if(typeof syncFloorOffsetMax === 'function') syncFloorOffsetMax();
+  for(const o of state.openings){
+    const wW=wallLengthOf(o.wall);
+    if(o.left+o.width>wW) o.left=Math.max(0,wW-o.width);
+  }
+  if(state.threshold){
+    const r=state.room;
+    if(state.threshold.axis==='y' && state.threshold.offset+state.threshold.width>r.length)
+      state.threshold.offset=Math.max(0,r.length-state.threshold.width);
+    if(state.threshold.axis==='x' && state.threshold.offset+state.threshold.width>r.width)
+      state.threshold.offset=Math.max(0,r.width-state.threshold.width);
+  }
+  render();
+}
+['rl','rw','rh','ih','tww','twh','tfw','tfh','grt'].forEach(id=>{
+  $(id).addEventListener('input', readSettings);
+});
+
+// ===== Add-mode buttons =====
+$('add-d90').onclick=()=>{ if(state.mode==='addOp'&&pendingOp.width===90)exitMode(); else enterAddOp('door',90,200,0,'add-d90'); };
+$('add-d75').onclick=()=>{ if(state.mode==='addOp'&&pendingOp.width===75)exitMode(); else enterAddOp('door',75,200,0,'add-d75'); };
+$('add-win').onclick=()=>{ if(state.mode==='addOp'&&pendingOp.type==='window')exitMode(); else enterAddOp('window',90,60,130,'add-win'); };
+$('add-thr').onclick=()=>{
+  if(!state.threshold){ ensureThresholdDefault(); }
+  state.selected={kind:'threshold'};
+  render();
+};
+$('cancel-add').onclick=exitMode;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.mode!=='edit')exitMode(); });
+
+// ===== Export / Import =====
+function dl(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+}
+$('ex-json').onclick=()=>{
+  gcEvent('export-json', 'JSON Export');
+  dl(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),'tile-plan-'+Date.now()+'.json');
+};
+$('im-json').onclick=()=>$('fi').click();
+$('fi').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.room && d.tiles){
+        state=Object.assign(state, d);
+        $('rl').value=state.room.length; $('rw').value=state.room.width;
+        gcEvent('import-json', 'Import JSON');
+        $('rh').value=state.room.wallHeight; $('ih').value=state.room.installHeight;
+        $('tww').value=cmToMm(state.tiles.wallW); $('twh').value=cmToMm(state.tiles.wallH);
+        $('tfw').value=cmToMm(state.tiles.floorW); $('tfh').value=cmToMm(state.tiles.floorH);
+        $('grt').value=state.tiles.groutMm;
+        // migrate offsetX
+        if(typeof state.tiles.offsetX === 'number'){
+          const v = state.tiles.offsetX;
+          state.tiles.offsetX = {W1:v,W2:v,W3:v,W4:v};
+        } else if(!state.tiles.offsetX || typeof state.tiles.offsetX !== 'object'){
+          state.tiles.offsetX = {W1:0,W2:0,W3:0,W4:0};
+        }
+        if(!state.tiles.floorOffset || typeof state.tiles.floorOffset !== 'object'){
+          state.tiles.floorOffset = {x:0, y:0};
+        }
+        if(!state.tiles.floorBondMode){
+          state.tiles.floorBondMode = state.tiles.bondMode || 'aligned';
+        }
+        // sync floor bond select UI
+        const fbSel = document.querySelector('.fbond-select');
+        if(fbSel) fbSel.value = state.tiles.floorBondMode;
+        // sync wall bond select UI
+        const wbSel = document.querySelector('.wbond-select');
+        if(wbSel) wbSel.value = state.tiles.bondMode;
+        const fxs = document.querySelector('.fx-slider'), fxn = document.querySelector('.fx-num');
+        const fys = document.querySelector('.fy-slider'), fyn = document.querySelector('.fy-num');
+        if(fxs){ fxs.value = cmToMm(state.tiles.floorOffset.x); fxn.value = cmToMm(state.tiles.floorOffset.x); }
+        if(fys){ fys.value = cmToMm(state.tiles.floorOffset.y); fyn.value = cmToMm(state.tiles.floorOffset.y); }
+        if(typeof syncFloorOffsetMax === 'function') syncFloorOffsetMax();
+        // sync UI
+        ['W1','W2','W3','W4'].forEach(w => {
+          const item = document.querySelector('.offset-item[data-wall="'+w+'"]');
+          if(item){
+            const v = cmToMm(state.tiles.offsetX[w] || 0);
+            item.querySelector('input[type=range]').value = v;
+            item.querySelector('input[type=number]').value = v;
+          }
+        });
+        if(typeof syncOffsetMax === 'function') syncOffsetMax();
+        state.selected=null; state.mode='edit';
+        render();
+      }
+    }catch(err){alert('JSON 解析失敗:'+err.message);}
+  };
+  r.readAsText(f);
+  e.target.value='';
+};
+
+const wbondSelect = document.querySelector('.wbond-select');
+if(wbondSelect){
+  wbondSelect.addEventListener('change', () => {
+    state.tiles.bondMode = wbondSelect.value;
+    render();
+  });
+}
+
+const fbondSelect = document.querySelector('.fbond-select');
+if(fbondSelect){
+  fbondSelect.addEventListener('change', () => {
+    state.tiles.floorBondMode = fbondSelect.value;
+    render();
+  });
+}
+document.querySelectorAll('#seg-dim button').forEach(b => {
+  b.addEventListener('click', () => {
+    const wasActive = b.classList.contains('active');
+    document.querySelectorAll('#seg-dim button').forEach(x => x.classList.remove('active'));
+    if(wasActive){
+      state.tiles.dimStyle = 'off';
+    } else {
+      b.classList.add('active');
+      state.tiles.dimStyle = b.dataset.dim;
+    }
+    render();
+  });
+});
+
+// ===== Tile-view toggle (walls preview vs unfolded box) =====
+const VIEW_KEY = 'tile-planner-view';
+function applyView(mode){
+  if(mode !== 'walls' && mode !== 'unfolded') mode = 'walls';
+  try { localStorage.setItem(VIEW_KEY, mode); } catch(e){}
+  $('tile-walls').style.display = mode === 'walls' ? '' : 'none';
+  $('tile-unfolded').style.display = mode === 'unfolded' ? '' : 'none';
+  $('tile-view-title').textContent = mode === 'walls' ? '牆面磁磚展開' : '紙盒展開圖';
+  document.querySelectorAll('#seg-tile-view button').forEach(x =>
+    x.classList.toggle('active', x.dataset.view === mode)
+  );
+  // dim segment only relevant in walls view; hide in unfolded
+  $('seg-dim').style.display = mode === 'walls' ? '' : 'none';
+  // re-render so the now-visible svg picks up correct container width
+  render();
+}
+document.querySelectorAll('#seg-tile-view button').forEach(b => {
+  b.addEventListener('click', () => {
+    if(b.dataset.view === 'unfolded') gcEvent('view-unfolded', 'Switch to unfolded view');
+    applyView(b.dataset.view);
+  });
+});
+let _initialView = 'walls';
+try { _initialView = localStorage.getItem(VIEW_KEY) || 'walls'; } catch(e){}
+applyView(_initialView);
+
+// ===== Export PNG / SVG =====
+// Strategy: clone target SVGs, inject all page <style> blocks (with dark-mode @media stripped
+// so dark-mode viewers don't recolor the export), serialize, render onto a 2x canvas with
+// header text. Force light theme during export for clean white-bg output.
+
+function getExportCSS(){
+  let css = Array.from(document.querySelectorAll('style'))
+    .map(st => st.textContent)
+    .join('\n');
+  // Strip @media (prefers-color-scheme: dark) blocks (they'd activate in dark-mode viewers
+  // when SVG is opened standalone, even though we forced light at export time)
+  css = css.replace(
+    /@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g,
+    ''
+  );
+  // Strip html[data-theme="dark"] rules too (defensive — wouldn't match standalone SVG anyway,
+  // but keeps the embedded CSS lean)
+  css = css.replace(
+    /html\[data-theme=["']dark["']\][^{}]*\{[^{}]*\}/g,
+    ''
+  );
+  return css;
+}
+
+async function svgToImage(svgEl, css){
+  const clone = svgEl.cloneNode(true);
+  const bbox = svgEl.getBoundingClientRect();
+  const w = Math.max(1, Math.round(bbox.width));
+  const h = Math.max(1, Math.round(bbox.height));
+
+  // Strip foreignObject (used for inline dim-edit inputs in plan view).
+  // Safari and some Chrome versions fail to rasterize SVG containing foreignObject
+  // via the Image() pathway, returning a blank/broken image.
+  clone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+
+  // Inject CSS as <style> inside the cloned SVG (so it's self-contained)
+  const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  styleEl.textContent = css;
+  clone.insertBefore(styleEl, clone.firstChild);
+
+  clone.setAttribute('width', w);
+  clone.setAttribute('height', h);
+  if(!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  // Use data URL (encodeURIComponent) — more compatible than blob URL across browsers
+  // for Image() loading + later canvas drawing.
+  const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    let settled = false;
+    const timer = setTimeout(() => {
+      if(settled) return;
+      settled = true;
+      reject(new Error('SVG load timeout'));
+    }, 10000);
+    img.onload = () => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({img, w, h, xml});
+    };
+    img.onerror = (e) => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(new Error('SVG image load failed'));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function downloadBlob(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 100);
+}
+
+function exportFilename(ext){
+  const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  return `tile-plan-${ts}.${ext}`;
+}
+
+function withForcedLightTheme(fn){
+  // Returns a Promise. Forces data-theme="light" before calling fn, restores after.
+  const root = document.documentElement;
+  const prevAttr = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', 'light');
+  // Wait 2 frames for any CSS-triggered repaint
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    .then(fn)
+    .finally(() => {
+      if(prevAttr === null){
+        root.removeAttribute('data-theme');
+      } else {
+        root.setAttribute('data-theme', prevAttr);
+      }
+    });
+}
+
+async function exportPNG(){
+  const btn = $('ex-png');
+  const oldText = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '匯出中…'; btn.disabled = true; }
+  try {
+    await withForcedLightTheme(async () => {
+      const css = getExportCSS();
+      const planSvg = $('canvas');
+      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
+      const tileSvg = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
+
+      const planRes = await svgToImage(planSvg, css);
+      const tileRes = await svgToImage(tileSvg, css);
+
+      const dpi = 2;
+      const pad = 24;
+      const gap = 32;
+      const headerH = 56;
+      const totalW = planRes.w + tileRes.w + gap + pad * 2;
+      const totalH = Math.max(planRes.h, tileRes.h) + pad * 2 + headerH;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = totalW * dpi;
+      canvas.height = totalH * dpi;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpi, dpi);
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, totalW, totalH);
+
+      // Header text
+      const r = state.room;
+      const t = state.tiles;
+      const title = `浴室磁磚計畫`;
+      const sub1 = `房間 ${r.length}×${r.width}cm  牆高 ${r.wallHeight}cm  安裝高 ${r.installHeight}cm`;
+      const sub2 = `牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm  縫 ${t.groutMm}mm`;
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
+      ctx.fillText(title, pad, 22);
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
+      ctx.fillStyle = '#444';
+      ctx.fillText(sub1, pad, 38);
+      ctx.fillStyle = '#666';
+      ctx.fillText(sub2, pad, 52);
+
+      // Sub-section labels
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif';
+      ctx.fillStyle = '#888';
+      ctx.fillText('平面圖', pad, pad + headerH - 4);
+      ctx.fillText(tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚', pad + planRes.w + gap, pad + headerH - 4);
+
+      // Draw images
+      ctx.drawImage(planRes.img, pad, pad + headerH, planRes.w, planRes.h);
+      ctx.drawImage(tileRes.img, pad + planRes.w + gap, pad + headerH, tileRes.w, tileRes.h);
+
+      await new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if(!blob){ reject(new Error('canvas.toBlob 失敗')); return; }
+          downloadBlob(blob, exportFilename('png'));
+          resolve();
+        }, 'image/png');
+      });
+    });
+  } catch(e){
+    alert('匯出 PNG 失敗:' + (e.message || e));
+    console.error('exportPNG error:', e);
+  } finally {
+    if(btn){ btn.textContent = oldText; btn.disabled = false; }
+  }
+}
+
+async function exportSVG(){
+  const btn = $('ex-svg');
+  const oldText = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '匯出中…'; btn.disabled = true; }
+  try {
+    await withForcedLightTheme(async () => {
+      const css = getExportCSS();
+      const planSvg = $('canvas');
+      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
+      const tileSvg = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
+
+      // Build a combined SVG: header + plan + tile, side by side
+      const planBox = planSvg.getBoundingClientRect();
+      const tileBox = tileSvg.getBoundingClientRect();
+      const pw = Math.max(1, Math.round(planBox.width)),  ph = Math.max(1, Math.round(planBox.height));
+      const tw2 = Math.max(1, Math.round(tileBox.width)), th2 = Math.max(1, Math.round(tileBox.height));
+      const pad = 24, gap = 32, headerH = 56;
+      const totalW = pw + tw2 + gap + pad * 2;
+      const totalH = Math.max(ph, th2) + pad * 2 + headerH;
+
+      // Clone and prepare each inner SVG
+      function prep(src, x, y, w, h){
+        const c = src.cloneNode(true);
+        c.setAttribute('x', x);
+        c.setAttribute('y', y);
+        c.setAttribute('width', w);
+        c.setAttribute('height', h);
+        return c;
+      }
+      const r = state.room;
+      const t = state.tiles;
+      const title = '浴室磁磚計畫';
+      const sub1 = `房間 ${r.length}×${r.width}cm  牆高 ${r.wallHeight}cm  安裝高 ${r.installHeight}cm`;
+      const sub2 = `牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm  縫 ${t.groutMm}mm`;
+
+      const ns = 'http://www.w3.org/2000/svg';
+      const out = document.createElementNS(ns, 'svg');
+      out.setAttribute('xmlns', ns);
+      out.setAttribute('width', totalW);
+      out.setAttribute('height', totalH);
+      out.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+      // Inject CSS
+      const styleEl = document.createElementNS(ns, 'style');
+      styleEl.textContent = css;
+      out.appendChild(styleEl);
+
+      // White background
+      const bg = document.createElementNS(ns, 'rect');
+      bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+      bg.setAttribute('width', totalW); bg.setAttribute('height', totalH);
+      bg.setAttribute('fill', '#ffffff');
+      out.appendChild(bg);
+
+      // Header text
+      const fontStack = '-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
+      const mkText = (x, y, text, fs, color, weight) => {
+        const e = document.createElementNS(ns, 'text');
+        e.setAttribute('x', x); e.setAttribute('y', y);
+        e.setAttribute('font-family', fontStack);
+        e.setAttribute('font-size', fs);
+        if(weight) e.setAttribute('font-weight', weight);
+        e.setAttribute('fill', color);
+        e.textContent = text;
+        return e;
+      };
+      out.appendChild(mkText(pad, 22, title, 16, '#1a1a1a', 600));
+      out.appendChild(mkText(pad, 38, sub1, 12, '#444'));
+      out.appendChild(mkText(pad, 52, sub2, 12, '#666'));
+      out.appendChild(mkText(pad, pad + headerH - 4, '平面圖', 11, '#888'));
+      out.appendChild(mkText(pad + pw + gap, pad + headerH - 4, tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚', 11, '#888'));
+
+      // Inner SVGs
+      out.appendChild(prep(planSvg, pad, pad + headerH, pw, ph));
+      out.appendChild(prep(tileSvg, pad + pw + gap, pad + headerH, tw2, th2));
+
+      const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(out);
+      const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
+      downloadBlob(blob, exportFilename('svg'));
+    });
+  } catch(e){
+    alert('匯出 SVG 失敗:' + (e.message || e));
+    console.error('exportSVG error:', e);
+  } finally {
+    if(btn){ btn.textContent = oldText; btn.disabled = false; }
+  }
+}
+
+async function exportPDF(){
+  const btn = $('ex-pdf');
+  const oldText = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = '準備中…'; btn.disabled = true; }
+  let container = null;
+  try {
+    await withForcedLightTheme(async () => {
+      const r = state.room;
+      const t = state.tiles;
+      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
+      const tileSrc = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
+      const planSrc = $('canvas');
+
+      // Build print container
+      container = document.createElement('div');
+      container.id = 'print-area';
+      const ts = new Date().toLocaleString('zh-TW');
+      container.innerHTML = `
+        <div class="print-header">
+          <h1>浴室磁磚計畫</h1>
+          <p>房間 ${r.length}×${r.width}cm　牆高 ${r.wallHeight}cm　安裝高 ${r.installHeight}cm</p>
+          <p>牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm　地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm　縫 ${t.groutMm}mm</p>
+          <p class="print-meta">${ts}</p>
+        </div>
+        <div class="print-body">
+          <div class="print-section">
+            <h2>平面圖</h2>
+          </div>
+          <div class="print-section">
+            <h2>${tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚'}</h2>
+          </div>
+        </div>
+      `;
+
+      // Clone source SVGs (cloneNode keeps viewBox & all current rendered children)
+      const planClone = planSrc.cloneNode(true);
+      const tileClone = tileSrc.cloneNode(true);
+
+      // Strip foreignObject (edit UI; not part of layout)
+      planClone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+      tileClone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+
+      // Reset display style on clones (in case the source has display:none)
+      planClone.removeAttribute('style');
+      tileClone.removeAttribute('style');
+      // Use 100% width so the @media print rule sizes them to page
+      planClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      tileClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      const sections = container.querySelectorAll('.print-section');
+      sections[0].appendChild(planClone);
+      sections[1].appendChild(tileClone);
+
+      document.body.appendChild(container);
+
+      // Trigger print and wait for dialog to close (or be cancelled)
+      await new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if(done) return;
+          done = true;
+          window.removeEventListener('afterprint', finish);
+          resolve();
+        };
+        window.addEventListener('afterprint', finish);
+        // Safety timeout if afterprint doesn't fire (rare)
+        setTimeout(finish, 60000);
+        try { window.print(); }
+        catch(e) { finish(); throw e; }
+      });
+    });
+  } catch(e){
+    alert('匯出 PDF 失敗:' + (e.message || e));
+    console.error('exportPDF error:', e);
+  } finally {
+    if(container) container.remove();
+    if(btn){ btn.textContent = oldText; btn.disabled = false; }
+  }
+}
+
+if($('ex-pdf')) $('ex-pdf').addEventListener('click', () => { gcEvent('export-pdf', 'PDF Export'); exportPDF(); });
+if($('ex-png')) $('ex-png').addEventListener('click', () => { gcEvent('export-png', 'PNG Export'); exportPNG(); });
+if($('ex-svg')) $('ex-svg').addEventListener('click', () => { gcEvent('export-svg', 'SVG Export'); exportSVG(); });
+
+
+document.querySelectorAll('#seg-cut button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#seg-cut button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.tiles.cuttingMode = b.dataset.cut;
+    render();
+  });
+});
+
+function bindOffsetItem(item){
+  const wall = item.dataset.wall;
+  const slider = item.querySelector('input[type=range]');
+  const num = item.querySelector('input[type=number]');
+  function setVal(vMm, source){
+    vMm = Math.max(0, +vMm || 0);
+    if(!state.tiles.offsetX || typeof state.tiles.offsetX !== 'object'){
+      state.tiles.offsetX = {W1:0,W2:0,W3:0,W4:0};
+    }
+    state.tiles.offsetX[wall] = mmToCm(vMm);  // store cm
+    if(source !== 'slider') slider.value = vMm;
+    if(source !== 'num') num.value = vMm;
+    render();
+  }
+  slider.addEventListener('input', () => setVal(slider.value, 'slider'));
+  num.addEventListener('input', () => setVal(num.value, 'num'));
+}
+document.querySelectorAll('.offset-item').forEach(bindOffsetItem);
+
+function bindFloorOffset(){
+  const xs = document.querySelector('.fx-slider');
+  const xn = document.querySelector('.fx-num');
+  const ys = document.querySelector('.fy-slider');
+  const yn = document.querySelector('.fy-num');
+  function setX(vMm, src){
+    vMm = Math.max(0, +vMm || 0);
+    state.tiles.floorOffset.x = mmToCm(vMm);  // store cm
+    if(src !== 'slider') xs.value = vMm;
+    if(src !== 'num') xn.value = vMm;
+    render();
+  }
+  function setY(vMm, src){
+    vMm = Math.max(0, +vMm || 0);
+    state.tiles.floorOffset.y = mmToCm(vMm);  // store cm
+    if(src !== 'slider') ys.value = vMm;
+    if(src !== 'num') yn.value = vMm;
+    render();
+  }
+  xs.addEventListener('input', () => setX(xs.value, 'slider'));
+  xn.addEventListener('input', () => setX(xn.value, 'num'));
+  ys.addEventListener('input', () => setY(ys.value, 'slider'));
+  yn.addEventListener('input', () => setY(yn.value, 'num'));
+}
+bindFloorOffset();
+
+function syncFloorOffsetMax(){
+  const fxs = document.querySelector('.fx-slider'), fxn = document.querySelector('.fx-num');
+  const fys = document.querySelector('.fy-slider'), fyn = document.querySelector('.fy-num');
+  if(!fxs || !fys) return;
+  // sliders display in mm; clamp logic compares cm-state
+  fxs.max = cmToMm(state.tiles.floorW); fxn.max = cmToMm(state.tiles.floorW);
+  fys.max = cmToMm(state.tiles.floorH); fyn.max = cmToMm(state.tiles.floorH);
+  if(state.tiles.floorOffset.x > state.tiles.floorW){
+    state.tiles.floorOffset.x = state.tiles.floorW;
+    fxs.value = cmToMm(state.tiles.floorW); fxn.value = cmToMm(state.tiles.floorW);
+  }
+  if(state.tiles.floorOffset.y > state.tiles.floorH){
+    state.tiles.floorOffset.y = state.tiles.floorH;
+    fys.value = cmToMm(state.tiles.floorH); fyn.value = cmToMm(state.tiles.floorH);
+  }
+}
+syncFloorOffsetMax();
+
+function syncOffsetMax(){
+  // max displayed in mm; state cm
+  const maxMm = cmToMm(state.tiles.wallW);
+  document.querySelectorAll('.offset-item input[type=range]').forEach(s2 => s2.max = maxMm);
+  document.querySelectorAll('.offset-item input[type=number]').forEach(s2 => s2.max = maxMm);
+  ['W1','W2','W3','W4'].forEach(w => {
+    if((state.tiles.offsetX[w] || 0) > state.tiles.wallW){
+      state.tiles.offsetX[w] = state.tiles.wallW;
+      const item = document.querySelector('.offset-item[data-wall="'+w+'"]');
+      if(item){
+        item.querySelector('input[type=range]').value = maxMm;
+        item.querySelector('input[type=number]').value = maxMm;
+      }
+    }
+  });
+}
+syncOffsetMax();
+
+window.addEventListener('resize',()=>render());
+render();
+})();
+</script>
+
+<!-- =====================================================================
+     GoatCounter analytics
+     一次性設定:
+       1. https://www.goatcounter.com/ 註冊(免費)
+       2. 取得 site code (e.g. eric-tileplanner)
+       3. 把下方 YOUR_GC_CODE 替換為你的 code
+     若沒設定或 GC 不可達,事件追蹤會 no-op,不影響工具運作。
+     ===================================================================== -->
+<script data-goatcounter="https://YOUR_GC_CODE.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
