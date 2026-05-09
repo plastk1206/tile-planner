@@ -95,6 +95,11 @@ body.dragging .oh,body.dragging .thr-rect{cursor:grabbing}
 .op-preview{stroke:var(--info);stroke-width:6;stroke-linecap:round;opacity:.55;pointer-events:none}
 .thr-rect{fill:#c0a880;stroke:#80603a;stroke-width:1.5;cursor:grab;touch-action:none;opacity:.85}
 .thr-rect.sel{stroke-width:2.5;stroke:var(--warn)}
+.shaft-rect{fill:rgba(120,120,110,0.55);stroke:#444;stroke-width:1.5;cursor:grab;touch-action:none}
+.shaft-rect.sel{stroke:var(--info);stroke-width:2.5}
+.shaft-hatch{stroke:#444;stroke-width:.8;opacity:.7;pointer-events:none}
+.preview-shaft{fill:rgba(120,120,110,0.55);stroke:#444;stroke-width:1;pointer-events:none}
+.preview-shaft-hatch{stroke:#444;stroke-width:.5;opacity:.7;pointer-events:none}
 .epF{fill:var(--info);stroke:var(--card);stroke-width:2;cursor:pointer;opacity:.92}
 .et{font-size:12px;font-weight:500;fill:var(--card);pointer-events:none;user-select:none}
 
@@ -357,7 +362,7 @@ input[type=file]{display:none}
         </div>
         <div class="plan-area">
           <svg id="canvas" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-            <g id="g-w"></g><g id="g-tiles"></g><g id="g-walls"></g><g id="g-o"></g><g id="g-d"></g><g id="g-a"></g><g id="g-c"></g><g id="g-wh"></g><g id="g-oh"></g><g id="g-thr"></g><g id="g-add"></g><g id="g-edit"></g>
+            <g id="g-w"></g><g id="g-tiles"></g><g id="g-walls"></g><g id="g-o"></g><g id="g-d"></g><g id="g-a"></g><g id="g-c"></g><g id="g-wh"></g><g id="g-oh"></g><g id="g-thr"></g><g id="g-shaft"></g><g id="g-add"></g><g id="g-edit"></g>
           </svg>
         </div>
         <div class="tools">
@@ -365,6 +370,7 @@ input[type=file]{display:none}
           <button id="add-d75">+ 門 75</button>
           <button id="add-win">+ 加窗</button>
           <button id="add-thr">+ 門檻</button>
+          <button id="add-shaft">+ 管道間</button>
           <button id="cancel-add" style="display:none;color:var(--danger);margin-left:auto">取消</button>
         </div>
       </div>
@@ -496,8 +502,10 @@ let state = {
     { id:'C1', wall:'W3', type:'window', width:90, height:60,  left:80, bottom:130 }
   ],
   threshold: null, // { width:6, axis:'y', offset:0 } when enabled
-  selected: null,  // {kind:'wall'|'opening'|'threshold', id}
+  shafts: [],      // [{ id, wall:'W1', offsetAlong, lenAlong, depth }]  pipe-shaft footprints (always wall-attached)
+  selected: null,  // {kind:'wall'|'opening'|'threshold'|'shaft', id}
   oCnt: 100,
+  sCnt: 0,
   mode: 'edit'  // 'edit' | 'addOp' | 'addThr'
 };
 let pendingOp = null; // {type, width, height} when addOp mode
@@ -712,6 +720,63 @@ function thresholdRect(){
   if(t.axis==='y') return {x:t.offset, y:0, w:t.width, h:r.width};
   return {x:0, y:t.offset, w:r.length, h:t.width};
 }
+
+// Pipe-shaft helpers ---------------------------------------------------------
+// shaft = {wall, offsetAlong, lenAlong, depth}. Always wall-attached.
+// Floor coords: x along W1/W3 (room.length), y along W2/W4 (room.width). (0,0) = top-left = W3-W2 corner.
+function shaftFloorRect(s){
+  const r = state.room;
+  switch(s.wall){
+    case 'W1': return {x:s.offsetAlong, y:r.width-s.depth, w:s.lenAlong, h:s.depth};
+    case 'W3': return {x:s.offsetAlong, y:0, w:s.lenAlong, h:s.depth};
+    case 'W2': return {x:0, y:r.width-s.offsetAlong-s.lenAlong, w:s.depth, h:s.lenAlong};
+    case 'W4': return {x:r.length-s.depth, y:s.offsetAlong, w:s.depth, h:s.lenAlong};
+  }
+}
+// For each shaft, returns array of {wall, left, width} indicating which wall regions
+// are blocked by it. Primary wall always blocked at offsetAlong; if shaft sits at
+// either end of its wall, the perpendicular adjacent wall is also blocked over depth cm.
+const SHAFT_CORNER_MAP = {
+  'W1@0':   {wall:'W2', anchor:'start'},
+  'W1@end': {wall:'W4', anchor:'end'},
+  'W2@0':   {wall:'W1', anchor:'start'},
+  'W2@end': {wall:'W3', anchor:'start'},
+  'W3@0':   {wall:'W2', anchor:'end'},
+  'W3@end': {wall:'W4', anchor:'start'},
+  'W4@0':   {wall:'W3', anchor:'end'},
+  'W4@end': {wall:'W1', anchor:'end'}
+};
+function shaftWallSegments(s){
+  const segs = [{wall:s.wall, left:s.offsetAlong, width:s.lenAlong, shaftId:s.id}];
+  const wallLen = wallLengthOf(s.wall);
+  const eps = 0.5;
+  if(s.offsetAlong < eps){
+    const c = SHAFT_CORNER_MAP[s.wall+'@0'];
+    if(c){
+      const adjLen = wallLengthOf(c.wall);
+      const left = c.anchor === 'end' ? Math.max(0, adjLen - s.depth) : 0;
+      segs.push({wall:c.wall, left, width:Math.min(s.depth, adjLen), shaftId:s.id});
+    }
+  }
+  if(s.offsetAlong + s.lenAlong > wallLen - eps){
+    const c = SHAFT_CORNER_MAP[s.wall+'@end'];
+    if(c){
+      const adjLen = wallLengthOf(c.wall);
+      const left = c.anchor === 'end' ? Math.max(0, adjLen - s.depth) : 0;
+      segs.push({wall:c.wall, left, width:Math.min(s.depth, adjLen), shaftId:s.id});
+    }
+  }
+  return segs;
+}
+function shaftSegmentsOnWall(wallName){
+  const out = [];
+  for(const s of state.shafts){
+    for(const seg of shaftWallSegments(s)){
+      if(seg.wall === wallName) out.push(seg);
+    }
+  }
+  return out;
+}
 function estimatePurchase(tiles,singleArea){
   const fullCount=tiles.filter(t=>t.full).length;
   const cutArea=tiles.filter(t=>!t.full).reduce((a,t)=>a+t.usedArea,0);
@@ -859,8 +924,8 @@ function wallPath(name, scale, pad){
 function renderPlan(floorData){
   const svg=$('canvas');
   const Gw=$('g-w'),Gtiles=$('g-tiles'),Gwalls=$('g-walls'),Go=$('g-o'),Gd=$('g-d'),Ga=$('g-a'),Gc=$('g-c'),
-        Gwh=$('g-wh'),Goh=$('g-oh'),Gthr=$('g-thr'),Gadd=$('g-add'),Gedit=$('g-edit');
-  [Gw,Gtiles,Gwalls,Go,Gd,Ga,Gc,Gwh,Goh,Gthr,Gadd,Gedit].forEach(g=>g.innerHTML='');
+        Gwh=$('g-wh'),Goh=$('g-oh'),Gthr=$('g-thr'),Gshaft=$('g-shaft'),Gadd=$('g-add'),Gedit=$('g-edit');
+  [Gw,Gtiles,Gwalls,Go,Gd,Ga,Gc,Gwh,Goh,Gthr,Gshaft,Gadd,Gedit].forEach(g=>g.innerHTML='');
 
   const r=state.room;
   const scale=planScale();
@@ -953,6 +1018,24 @@ function renderPlan(floorData){
           v=>applyThrDist('end',v), {width:54,height:22}));
       }
     }
+  }
+
+  // pipe shafts on floor
+  for(const s of state.shafts){
+    const fr = shaftFloorRect(s);
+    const sel = state.selected && state.selected.kind==='shaft' && state.selected.id===s.id;
+    const rx = pad+fr.x*scale, ry = pad+fr.y*scale, rw = fr.w*scale, rh = fr.h*scale;
+    const rect = mr({x:rx, y:ry, width:rw, height:rh}, 'shaft-rect'+(sel?' sel':''));
+    rect.dataset.shaftId = s.id;
+    Gshaft.appendChild(rect);
+    // diagonal hatch (two crossing lines so it's clearly distinct from door/threshold)
+    Gshaft.appendChild(ml({x:rx, y:ry}, {x:rx+rw, y:ry+rh}, 'shaft-hatch'));
+    Gshaft.appendChild(ml({x:rx+rw, y:ry}, {x:rx, y:ry+rh}, 'shaft-hatch'));
+    // dim label inside shaft
+    const fs = Math.max(8, Math.min(11, Math.min(rw, rh) * 0.18));
+    const lbl = mt(rx+rw/2, ry+rh/2, s.lenAlong+'×'+s.depth, 'preview-label');
+    lbl.setAttribute('font-size', fs);
+    Gshaft.appendChild(lbl);
   }
 
   // walls
@@ -1119,6 +1202,10 @@ function renderPlan(floorData){
   Gthr.querySelectorAll('[data-thr]').forEach(el=>{
     el.addEventListener('pointerdown', e => startThrDrag(e));
   });
+  Gshaft.querySelectorAll('[data-shaft-id]').forEach(el=>{
+    const sid = el.dataset.shaftId;
+    el.addEventListener('pointerdown', e => startShaftDrag(e, sid));
+  });
   Ga.querySelectorAll('g[data-cycle]').forEach(el=>{
     el.addEventListener('click',e=>{
       e.stopPropagation();
@@ -1210,6 +1297,57 @@ function startThrDrag(e){
   };
 }
 
+function startShaftDrag(e, sid){
+  if(state.mode !== 'edit') return;
+  const s = state.shafts.find(x => x.id === sid); if(!s) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const pt = svgPt(e); if(!pt) return;
+  const scale = planScale();
+  const pad = 50;
+  const fx = (pt.x - pad)/scale, fy = (pt.y - pad)/scale;
+  // Grab offset along its current wall
+  const projAlong = projectOnWall(s.wall, pt.x, pt.y);
+  dragging = {
+    kind: 'shaft',
+    shaftId: sid,
+    grabAlong: projAlong - s.offsetAlong,
+    grabFx: fx, grabFy: fy,
+    startX: e.clientX, startY: e.clientY,
+    moved: false
+  };
+}
+
+// Pick the closest wall to a free floor point (cm coords); returns wall name.
+function nearestWall(fx, fy){
+  const r = state.room;
+  const dists = {
+    W1: r.width - fy,   // distance to bottom wall
+    W3: fy,             // top
+    W2: fx,             // left
+    W4: r.length - fx   // right
+  };
+  return Object.keys(dists).reduce((a,b) => dists[a] < dists[b] ? a : b);
+}
+
+// Map a floor point to (wall, offsetAlong) given a shaft's lenAlong (so offset is clamped).
+function pickShaftPlacement(fx, fy, lenAlong){
+  const r = state.room;
+  const wall = nearestWall(fx, fy);
+  const wallLen = wallLengthOf(wall);
+  let along;
+  // For each wall, compute "along" coord using the same a→b convention as projectOnWall
+  switch(wall){
+    case 'W1': along = fx; break;                        // bottom: a=BL, b=BR
+    case 'W2': along = r.width - fy; break;              // left: a=BL, b=TL (going up = +offset)
+    case 'W3': along = fx; break;                        // top: a=TL, b=TR
+    case 'W4': along = fy; break;                        // right: a=TR, b=BR (going down = +offset)
+  }
+  let off = Math.round(along - lenAlong/2);
+  off = Math.max(0, Math.min(wallLen - lenAlong, off));
+  return {wall, offsetAlong: off};
+}
+
 // Single global pointer-move/up/cancel handlers
 document.addEventListener('pointermove', e => {
   if(!dragging) return;
@@ -1246,6 +1384,38 @@ document.addEventListener('pointermove', e => {
       state.selected = {kind:'threshold'};
       scheduleRender();
     }
+  } else if(dragging.kind === 'shaft'){
+    const s = state.shafts.find(x => x.id === dragging.shaftId); if(!s) return;
+    const scale = planScale();
+    const pad = 50;
+    const fx = (pt.x - pad)/scale, fy = (pt.y - pad)/scale;
+    // Decide whether to switch wall: pick nearest, but require a small bias to
+    // prevent jitter when fingers are right between two walls.
+    const targetWall = nearestWall(fx, fy);
+    const r = state.room;
+    function alongFor(wall){
+      switch(wall){
+        case 'W1': return fx;
+        case 'W2': return r.width - fy;
+        case 'W3': return fx;
+        case 'W4': return fy;
+      }
+    }
+    if(targetWall !== s.wall){
+      const placement = pickShaftPlacement(fx, fy, s.lenAlong);
+      s.wall = placement.wall;
+      s.offsetAlong = placement.offsetAlong;
+      // Re-anchor grabAlong to the new wall's coordinate system so subsequent
+      // moves on the same wall feel continuous instead of jumping again.
+      dragging.grabAlong = alongFor(s.wall) - s.offsetAlong;
+    } else {
+      const wallLen = wallLengthOf(s.wall);
+      let newOff = Math.round(alongFor(s.wall) - dragging.grabAlong);
+      newOff = Math.max(0, Math.min(wallLen - s.lenAlong, newOff));
+      if(s.offsetAlong !== newOff) s.offsetAlong = newOff;
+    }
+    state.selected = {kind:'shaft', id:s.id};
+    scheduleRender();
   }
 });
 
@@ -1264,6 +1434,9 @@ document.addEventListener('pointerup', e => {
       }
     } else if(dragging.kind === 'threshold'){
       state.selected = {kind:'threshold'};
+      render();
+    } else if(dragging.kind === 'shaft'){
+      state.selected = {kind:'shaft', id:dragging.shaftId};
       render();
     }
   } else {
@@ -1298,6 +1471,24 @@ function rotateThreshold(){
     t.axis='y';
     t.offset=Math.max(0, Math.round(r.length/2 - t.width/2));
   }
+}
+
+function ensureShaftDefault(){
+  const r = state.room;
+  // Default 40 (沿牆) × 30 (深) at the bottom-left corner (W1, offsetAlong=0).
+  // Clamp if room is unusually small.
+  const lenAlong = Math.min(40, Math.max(10, r.length));
+  const depth = Math.min(30, Math.max(10, r.width));
+  state.sCnt++;
+  const s = {
+    id: 'P' + state.sCnt,
+    wall: 'W1',
+    offsetAlong: 0,
+    lenAlong,
+    depth
+  };
+  state.shafts.push(s);
+  return s;
 }
 
 function ensureThresholdDefault(){
@@ -1339,6 +1530,13 @@ function applyWallLen(name, cm){
       state.threshold.offset=Math.max(0,r.length-state.threshold.width);
     if(state.threshold.axis==='x' && state.threshold.offset+state.threshold.width>r.width)
       state.threshold.offset=Math.max(0,r.width-state.threshold.width);
+  }
+  for(const s of state.shafts){
+    const wallLen = wallLengthOf(s.wall);
+    const perpLen = (s.wall==='W1'||s.wall==='W3') ? state.room.width : state.room.length;
+    s.lenAlong = Math.max(5, Math.min(s.lenAlong, wallLen));
+    s.depth = Math.max(5, Math.min(s.depth, perpLen));
+    s.offsetAlong = Math.max(0, Math.min(s.offsetAlong, wallLen - s.lenAlong));
   }
   render();
 }
@@ -1481,6 +1679,52 @@ function renderEditPanel(){
     $('thr-del').onclick=()=>{state.threshold=null; state.selected=null; render();};
     return;
   }
+  if(state.selected.kind==='shaft'){
+    const s=state.shafts.find(x=>x.id===state.selected.id);
+    if(!s){ep.style.display='none';return;}
+    const wallLen = wallLengthOf(s.wall);
+    const r = state.room;
+    const perpLen = (s.wall==='W1'||s.wall==='W3') ? r.width : r.length;
+    tit.textContent = '管道間 — 貼 '+s.wall;
+    body.innerHTML=`
+      <div class="row">
+        <label>沿牆長 <input id="sh-len" type="number" value="${s.lenAlong}"/> cm</label>
+        <label>深度 <input id="sh-dep" type="number" value="${s.depth}"/> cm</label>
+        <label>沿牆位置 <input id="sh-off" type="number" value="${s.offsetAlong}"/> cm</label>
+      </div>
+      <div class="row">
+        <label>貼牆
+          <select id="sh-wall">
+            <option value="W1" ${s.wall==='W1'?'selected':''}>W1(下)</option>
+            <option value="W2" ${s.wall==='W2'?'selected':''}>W2(左)</option>
+            <option value="W3" ${s.wall==='W3'?'selected':''}>W3(上)</option>
+            <option value="W4" ${s.wall==='W4'?'selected':''}>W4(右)</option>
+          </select>
+        </label>
+      </div>
+      <div class="actions-row">
+        <button id="sh-apply">套用</button>
+        <button class="del" id="sh-del">移除管道間</button>
+      </div>
+    `;
+    $('sh-apply').onclick=()=>{
+      const newWall = $('sh-wall').value;
+      const newWallLen = wallLengthOf(newWall);
+      const newPerpLen = (newWall==='W1'||newWall==='W3') ? r.width : r.length;
+      let len = Math.max(5, Math.min(+$('sh-len').value || s.lenAlong, newWallLen));
+      let dep = Math.max(5, Math.min(+$('sh-dep').value || s.depth, newPerpLen));
+      let off = Math.max(0, Math.min(+$('sh-off').value || 0, newWallLen - len));
+      s.wall = newWall;
+      s.lenAlong = len; s.depth = dep; s.offsetAlong = off;
+      render();
+    };
+    $('sh-del').onclick=()=>{
+      state.shafts = state.shafts.filter(x => x.id !== s.id);
+      state.selected = null;
+      render();
+    };
+    return;
+  }
   // opening
   const o=state.openings.find(x=>x.id===state.selected.id);
   if(!o){ep.style.display='none';return;}
@@ -1595,9 +1839,13 @@ function renderTilePreview(){
   walls.forEach(name => {
     const wallLen = wallLengthOf(name);
     const installH = Math.min(state.room.installHeight, fullH);
-    const holes = openingsOnWall(name).filter(o => o.bottom < installH).map(o => ({
+    const oHoles = openingsOnWall(name).filter(o => o.bottom < installH).map(o => ({
       x:o.left, y:o.bottom, w:o.width, h:Math.min(o.height, installH-o.bottom)
     }));
+    const sHoles = shaftSegmentsOnWall(name).map(seg => ({
+      x:seg.left, y:0, w:seg.width, h:installH
+    }));
+    const holes = [...oHoles, ...sHoles];
     const tiles = buildTiles(wallLen, installH, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, holes, state.tiles.bondMode, state.tiles.offsetX[name] || 0);
     nextWallNum += tiles.length;
     wallTilesByName[name] = tiles;
@@ -1645,6 +1893,17 @@ function renderTilePreview(){
       const oy2 = pad + (fullH-o.bottom-o.height)*scaleW;
       svgW.appendChild(mr({x:ox2, y:oy2, width:o.width*scaleW, height:o.height*scaleW}, 'preview-opening'));
     });
+    // pipe-shaft segments on this wall: full-height markers with hatch
+    shaftSegmentsOnWall(name).forEach(seg => {
+      const sx = ox + seg.left*scaleW;
+      const sy = pad + (fullH-installH)*scaleW;
+      const sw = seg.width*scaleW;
+      const sh = installH*scaleW;
+      svgW.appendChild(mr({x:sx, y:sy, width:sw, height:sh}, 'preview-shaft'));
+      // diagonal hatch overlay
+      svgW.appendChild(ml({x:sx, y:sy}, {x:sx+sw, y:sy+sh}, 'preview-shaft-hatch'));
+      svgW.appendChild(ml({x:sx+sw, y:sy}, {x:sx, y:sy+sh}, 'preview-shaft-hatch'));
+    });
     // width dim below this wall
     drawWidthDim(svgW, ox, pad + fullH*scaleW + 4, wallLen, scaleW,
                  state.tiles.wallW, state.tiles.wallH, grout(),
@@ -1665,6 +1924,7 @@ function renderTilePreview(){
   // Build floor tile data (for stats only — drawing happens in renderPlan via g-tiles)
   const thr=thresholdRect();
   const fHoles = thr ? [thr] : [];
+  for(const s of state.shafts) fHoles.push(shaftFloorRect(s));
   const floorTiles=buildTiles(r.length, r.width, state.tiles.floorW, state.tiles.floorH, grout(), 1, fHoles, state.tiles.floorBondMode, state.tiles.floorOffset.x, state.tiles.floorOffset.y);
   const floorCuts0 = floorTiles.filter(t => !t.full);
   const floorPairResult = pairCutTiles(floorCuts0, state.tiles.floorW, state.tiles.floorH);
@@ -1846,8 +2106,19 @@ function updateStats(allTiles){
   const fBuy = isOpt ? floorBuyOpt : floorBuyNaive;
   const r=state.room;
   const thr=thresholdRect();
-  const wallArea = state.room.installHeight * (r.length*2+r.width*2) / 10000;
-  const floorArea = (r.length*r.width - (thr?thr.w*thr.h:0)) / 10000;
+  // Wall area = perimeter × installHeight, minus per-wall shaft segments (full-height hides)
+  let shaftWallCm2 = 0;
+  for(const s of state.shafts){
+    for(const seg of shaftWallSegments(s)) shaftWallCm2 += seg.width * state.room.installHeight;
+  }
+  const wallArea = (state.room.installHeight * (r.length*2+r.width*2) - shaftWallCm2) / 10000;
+  // Floor area = room minus threshold and all shaft footprints
+  let shaftFloorCm2 = 0;
+  for(const s of state.shafts){
+    const fr = shaftFloorRect(s);
+    shaftFloorCm2 += fr.w * fr.h;
+  }
+  const floorArea = (r.length*r.width - (thr?thr.w*thr.h:0) - shaftFloorCm2) / 10000;
   const wallSavings = wallBuyNaive - wallBuyOpt;
   const floorSavings = floorBuyNaive - floorBuyOpt;
   function buySubText(savings, isOptMode){
@@ -1908,6 +2179,13 @@ function readSettings(){
     if(state.threshold.axis==='x' && state.threshold.offset+state.threshold.width>r.width)
       state.threshold.offset=Math.max(0,r.width-state.threshold.width);
   }
+  for(const s of state.shafts){
+    const wallLen = wallLengthOf(s.wall);
+    const perpLen = (s.wall==='W1'||s.wall==='W3') ? state.room.width : state.room.length;
+    s.lenAlong = Math.max(5, Math.min(s.lenAlong, wallLen));
+    s.depth = Math.max(5, Math.min(s.depth, perpLen));
+    s.offsetAlong = Math.max(0, Math.min(s.offsetAlong, wallLen - s.lenAlong));
+  }
   render();
 }
 ['rl','rw','rh','ih','tww','twh','tfw','tfh','grt'].forEach(id=>{
@@ -1921,6 +2199,11 @@ $('add-win').onclick=()=>{ if(state.mode==='addOp'&&pendingOp.type==='window')ex
 $('add-thr').onclick=()=>{
   if(!state.threshold){ ensureThresholdDefault(); }
   state.selected={kind:'threshold'};
+  render();
+};
+$('add-shaft').onclick=()=>{
+  const s = ensureShaftDefault();
+  state.selected={kind:'shaft', id:s.id};
   render();
 };
 $('cancel-add').onclick=exitMode;
@@ -1947,6 +2230,8 @@ $('fi').onchange=e=>{
       const d=JSON.parse(ev.target.result);
       if(d.room && d.tiles){
         state=Object.assign(state, d);
+        if(!Array.isArray(state.shafts)) state.shafts = [];
+        if(typeof state.sCnt !== 'number') state.sCnt = state.shafts.length;
         $('rl').value=state.room.length; $('rw').value=state.room.width;
         gcEvent('import-json', 'Import JSON');
         $('rh').value=state.room.wallHeight; $('ih').value=state.room.installHeight;
