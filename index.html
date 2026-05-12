@@ -278,6 +278,7 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 .offset-item input[type=number]::-webkit-outer-spin-button,
 .offset-item input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .offset-item .unit{font-size:10px;color:var(--hint);min-width:14px}
+.offset-y-global{border-left:1px dashed var(--border2);padding-left:10px;margin-left:6px}
 
 .dim-label{font-size:10px;fill:var(--muted);text-anchor:middle;dominant-baseline:middle;font-family:-apple-system,sans-serif;pointer-events:none;user-select:none}
 .dim-label.total{font-weight:600;fill:var(--fg);font-size:11px}
@@ -433,6 +434,12 @@ input[type=file]{display:none}
         <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
         <span class="unit">mm</span>
       </div>
+      <div class="offset-item offset-y-global">
+        <span class="lbl">上下(全部)</span>
+        <input type="range" min="0" max="300" step="5" value="0"/>
+        <input type="number" inputmode="decimal" min="0" step="5" value="0"/>
+        <span class="unit">mm</span>
+      </div>
     </div>
     <div class="tile-section">
       <h3><span id="tile-view-title">牆面磁磚展開</span> <span class="pstats" id="walls-stats"></span><span class="bond-lbl">切割</span><div class="seg" id="seg-cut"><button data-cut="naive" class="active" title="每片裁切都用一片新原磚">標準</button><button data-cut="optimized" title="盡量讓多片裁切共用同一片原磚,省料">最佳化</button></div><span class="bond-lbl">排版</span><div class="seg" id="seg-tile-view"><button data-view="walls" class="active" title="逐面牆攤平,方便比較尺寸">牆面</button><button data-view="unfolded" title="像紙盒平鋪展開,中央地板四周牆面,檢視磁磚對縫">紙盒</button></div><span class="bond-lbl">牆磚貼法</span><select class="wbond-select" title="牆磚的橫向錯位方式:對齊=同一條垂直縫;交丁=每排錯開">
@@ -503,7 +510,7 @@ const SCALE = 1.0; // plan is in cm directly (1px = 1cm visually for simple sizi
 // State
 let state = {
   room: { length: 280, width: 180, wallHeight: 270, installHeight: 240 },
-  tiles: { wallW: 60, wallH: 30, floorW: 30, floorH: 30, groutMm: 3, bondMode: 'aligned', floorBondMode: 'aligned', dimStyle: 'plain', cuttingMode: 'naive', offsetX: { W1: 0, W2: 0, W3: 0, W4: 0 }, floorOffset: { x: 0, y: 0 } },
+  tiles: { wallW: 60, wallH: 30, floorW: 30, floorH: 30, groutMm: 3, bondMode: 'aligned', floorBondMode: 'aligned', dimStyle: 'plain', cuttingMode: 'naive', offsetX: { W1: 0, W2: 0, W3: 0, W4: 0 }, offsetY: 0, floorOffset: { x: 0, y: 0 } },
   openings: [
     { id:'D1', wall:'W2', type:'door',   width:75, height:200, left:30, bottom:0, hinge:'s', swing:'l' },
     { id:'C1', wall:'W3', type:'window', width:90, height:60,  left:80, bottom:130 }
@@ -1970,7 +1977,7 @@ function renderTilePreview(){
       wallTilesList.push([]);
       return;
     }
-    const tiles = buildTiles(spec.length, installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, spec.holes, state.tiles.bondMode, spec.offsetX);
+    const tiles = buildTiles(spec.length, installH_pre, state.tiles.wallW, state.tiles.wallH, grout(), nextWallNum, spec.holes, state.tiles.bondMode, spec.offsetX, state.tiles.offsetY || 0);
     nextWallNum += tiles.length;
     wallTilesList.push(tiles);
     allWallTiles = allWallTiles.concat(tiles);
@@ -2417,6 +2424,7 @@ $('fi').onchange=e=>{
         } else if(!state.tiles.offsetX || typeof state.tiles.offsetX !== 'object'){
           state.tiles.offsetX = {W1:0,W2:0,W3:0,W4:0};
         }
+        if(typeof state.tiles.offsetY !== 'number') state.tiles.offsetY = 0;
         if(!state.tiles.floorOffset || typeof state.tiles.floorOffset !== 'object'){
           state.tiles.floorOffset = {x:0, y:0};
         }
@@ -2443,6 +2451,11 @@ $('fi').onchange=e=>{
             item.querySelector('input[type=number]').value = v;
           }
         });
+        const yItem = document.querySelector('.offset-y-global');
+        if(yItem){
+          yItem.querySelector('input[type=range]').value = cmToMm(state.tiles.offsetY);
+          yItem.querySelector('input[type=number]').value = cmToMm(state.tiles.offsetY);
+        }
         if(typeof syncOffsetMax === 'function') syncOffsetMax();
         state.selected=null; state.mode='edit';
         render();
@@ -2883,7 +2896,24 @@ function bindOffsetItem(item){
   slider.addEventListener('input', () => setVal(slider.value, 'slider'));
   num.addEventListener('input', () => setVal(num.value, 'num'));
 }
-document.querySelectorAll('.offset-item').forEach(bindOffsetItem);
+document.querySelectorAll('.offset-item:not(.offset-y-global)').forEach(bindOffsetItem);
+
+function bindOffsetY(){
+  const item = document.querySelector('.offset-y-global');
+  if(!item) return;
+  const slider = item.querySelector('input[type=range]');
+  const num = item.querySelector('input[type=number]');
+  function setY(vMm, src){
+    vMm = Math.max(0, +vMm || 0);
+    state.tiles.offsetY = mmToCm(vMm);
+    if(src !== 'slider') slider.value = vMm;
+    if(src !== 'num') num.value = vMm;
+    render();
+  }
+  slider.addEventListener('input', () => setY(slider.value, 'slider'));
+  num.addEventListener('input', () => setY(num.value, 'num'));
+}
+bindOffsetY();
 
 function bindFloorOffset(){
   const xs = document.querySelector('.fx-slider');
@@ -2932,8 +2962,8 @@ syncFloorOffsetMax();
 function syncOffsetMax(){
   // max displayed in mm; state cm
   const maxMm = cmToMm(state.tiles.wallW);
-  document.querySelectorAll('.offset-item input[type=range]').forEach(s2 => s2.max = maxMm);
-  document.querySelectorAll('.offset-item input[type=number]').forEach(s2 => s2.max = maxMm);
+  document.querySelectorAll('.offset-item:not(.offset-y-global) input[type=range]').forEach(s2 => s2.max = maxMm);
+  document.querySelectorAll('.offset-item:not(.offset-y-global) input[type=number]').forEach(s2 => s2.max = maxMm);
   ['W1','W2','W3','W4'].forEach(w => {
     if((state.tiles.offsetX[w] || 0) > state.tiles.wallW){
       state.tiles.offsetX[w] = state.tiles.wallW;
@@ -2944,6 +2974,17 @@ function syncOffsetMax(){
       }
     }
   });
+  const maxYMm = cmToMm(state.tiles.wallH);
+  const yItem = document.querySelector('.offset-y-global');
+  if(yItem){
+    yItem.querySelector('input[type=range]').max = maxYMm;
+    yItem.querySelector('input[type=number]').max = maxYMm;
+    if(state.tiles.offsetY > state.tiles.wallH){
+      state.tiles.offsetY = state.tiles.wallH;
+      yItem.querySelector('input[type=range]').value = maxYMm;
+      yItem.querySelector('input[type=number]').value = maxYMm;
+    }
+  }
 }
 syncOffsetMax();
 
