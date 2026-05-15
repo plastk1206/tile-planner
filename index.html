@@ -47,6 +47,9 @@ h1{font-size:16px;font-weight:500;margin:0}
 .actions{display:flex;gap:6px;flex-wrap:wrap}
 .actions button{height:32px;padding:0 10px;font-size:12px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:var(--r-md);cursor:pointer}
 .actions button:active{background:var(--bg2)}
+.actions a#line-link{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;font-size:12px;color:var(--fg);text-decoration:none;background:transparent;border:.5px solid var(--border2);border-radius:var(--r-md);cursor:pointer;transition:background .15s;margin-left:auto}
+.actions a#line-link:hover{background:var(--bg2)}
+.actions a#line-link .dot{width:8px;height:8px;border-radius:50%;background:#06C755;display:inline-block;flex-shrink:0}
 
 .settings{display:flex;gap:10px;margin:0 0 10px;flex-wrap:wrap}
 .fs{flex:1;min-width:260px;background:var(--card);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 12px}
@@ -78,8 +81,8 @@ h1{font-size:16px;font-weight:500;margin:0}
 .oh{stroke:transparent;stroke-width:24;cursor:grab;touch-action:none}
 body.dragging .oh,body.dragging .thr-rect{cursor:grabbing}
 .cv.adding-op .oh{pointer-events:none}
-.dl{font-size:13px;fill:var(--muted);pointer-events:none;user-select:none}
-.dl.sel{fill:var(--info);font-weight:500}
+.dl{font-size:13px;font-weight:700;fill:var(--muted);pointer-events:none;user-select:none}
+.dl.sel{fill:var(--info);font-weight:700}
 .ol{font-size:11.5px;fill:var(--hint);pointer-events:none;user-select:none}
 .ol.sel{fill:var(--info);font-weight:500}
 .cd{fill:var(--card);stroke:var(--line);stroke-width:1.5;pointer-events:none}
@@ -192,7 +195,7 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 #tile-unfolded .uf-thr{fill:var(--warn-bg);stroke:var(--warn);stroke-width:1;pointer-events:none}
 #tile-unfolded .uf-wall-label{fill:var(--muted);font-weight:600;letter-spacing:0.04em;pointer-events:none;text-anchor:middle;dominant-baseline:middle}
 #tile-unfolded .uf-corner-label{fill:var(--hint);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle;opacity:0.7}
-/* ===== Print / PDF export ===== */
+/* ===== Print / PDF export (kami design) ===== */
 #print-area{display:none}
 @media print{
   body *{visibility:hidden}
@@ -202,21 +205,41 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
     position:absolute;
     left:0;top:0;
     width:100%;
-    background:white;
-    color:#1a1a1a;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Helvetica Neue",sans-serif;
+    background:#f5f4ed;
+    color:#141413;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans TC","Microsoft YaHei",Arial,sans-serif;
     padding:0;
     margin:0;
+    font-weight:500;
   }
-  #print-area .print-header{margin-bottom:8mm}
-  #print-area .print-header h1{font-size:14pt;font-weight:600;margin:0 0 2mm 0;color:#1a1a1a}
-  #print-area .print-header p{font-size:9pt;margin:1mm 0;color:#444}
-  #print-area .print-header .print-meta{color:#888;font-size:8pt;margin-top:1.5mm}
-  #print-area .print-body{display:flex;gap:8mm;align-items:flex-start}
-  #print-area .print-section{flex:1;min-width:0;page-break-inside:avoid}
-  #print-area .print-section h2{font-size:10pt;font-weight:500;color:#666;margin:0 0 3mm 0}
-  #print-area .print-section svg{display:block;width:100% !important;height:auto !important;max-height:170mm}
-  @page{size:A4 landscape;margin:12mm}
+  #print-area .print-header{margin-bottom:3mm;display:grid;grid-template-columns:1fr auto;align-items:start;gap:8mm;page-break-after:avoid}
+  #print-area .print-header .title-wrap{border-left:.9mm solid #1B365D;padding-left:3mm}
+  #print-area .print-header h1{font-size:15pt;font-weight:500;margin:0;color:#141413;letter-spacing:.02em;line-height:1.1}
+  #print-area .print-header .subtitle{font-size:8.5pt;font-weight:600;color:#1B365D;margin:.6mm 0 0;letter-spacing:.12em;text-transform:uppercase}
+  #print-area .print-header .proj-line{font-size:9.5pt;font-weight:500;margin:1.5mm 0 0;color:#141413;line-height:1.35}
+  #print-area .print-header .proj-line .sep{color:#b8b7b0;margin:0 1mm}
+  #print-area .print-header .proj-line .proj-addr{color:#504e49;font-weight:400}
+  #print-area .print-header .spec{font-size:8.5pt;margin:1mm 0 0;color:#504e49;font-weight:400;line-height:1.45}
+  #print-area .print-header .print-meta{color:#6b6a64;font-size:8pt;font-weight:400;text-align:right;white-space:nowrap}
+  #print-area hr.kami-rule{border:none;border-top:.25pt solid #e8e6dc;margin:2mm 0 3mm;page-break-after:avoid}
+  #print-area .print-metrics{display:grid;grid-template-columns:auto repeat(4,1fr);gap:1.5mm;margin:0 0 3mm;align-items:stretch;page-break-inside:avoid;page-break-after:avoid}
+  #print-area .print-metrics .row-label{font-size:9pt;font-weight:500;color:#141413;align-self:center;padding-right:2mm}
+  #print-area .print-metrics .cell{background:#faf9f5;border:.3pt solid #e8e6dc;border-radius:1.5mm;padding:1mm 2mm;display:flex;flex-direction:column;justify-content:center;min-height:8mm}
+  #print-area .print-metrics .cell .lbl{font-size:6.5pt;font-weight:600;color:#504e49;letter-spacing:.04em}
+  #print-area .print-metrics .cell .val{font-size:10.5pt;font-weight:500;color:#1B365D;font-variant-numeric:tabular-nums;line-height:1.05;margin-top:.4mm}
+  #print-area .print-metrics .cell .unit{font-size:7.5pt;font-weight:400;color:#504e49;margin-left:1.2mm}
+  #print-area .print-body{display:grid;grid-template-columns:1fr 2fr;gap:5mm;align-items:flex-start;page-break-inside:avoid;page-break-before:avoid}
+  #print-area .print-section{min-width:0;page-break-inside:avoid;background:transparent;border:.35pt solid #6b6a64;border-radius:0;padding:2.5mm 3mm 2.5mm 3mm;position:relative}
+  #print-area .print-section .tag{display:inline-flex;align-items:center;gap:2mm;background:transparent;color:#3d3d3a;font-family:"JetBrains Mono","SF Mono",Consolas,"Microsoft JhengHei",monospace;font-size:7pt;font-weight:500;padding:.4mm 1.8mm;border:.3pt solid #6b6a64;border-radius:0;letter-spacing:.12em;margin-bottom:2mm;text-transform:uppercase}
+  #print-area .print-section .tag .num{color:#1B365D;font-weight:600}
+  #print-area .print-section svg{display:block;width:100% !important;height:auto !important;max-height:118mm}
+  #print-area .print-footer{margin-top:2mm;display:flex;justify-content:flex-end;font-size:7pt;color:#6b6a64;font-weight:400;font-family:"JetBrains Mono","SF Mono",Consolas,"Microsoft JhengHei",monospace;letter-spacing:.08em;page-break-before:avoid}
+  #print-area .print-page{page-break-after:always;page-break-inside:avoid;break-inside:avoid;max-height:190mm;overflow:hidden}
+  #print-area .print-page:last-child{page-break-after:auto}
+  #print-area .print-page--full .print-body{grid-template-columns:1fr}
+  #print-area .print-page--full .print-section{height:185mm;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
+  #print-area .print-page--full .print-section svg{max-height:178mm;width:auto;max-width:100%;height:auto;margin:0 auto}
+  @page{size:A4 landscape;margin:10mm 12mm}
 }
 
 
@@ -232,6 +255,17 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 #canvas .plan-tile{fill:rgba(127,127,127,0.04);stroke:rgba(0,0,0,0.18);stroke-width:0.5;pointer-events:none}
 #canvas .plan-tile.cut{fill:rgba(60,140,255,0.08);stroke:rgba(60,140,255,0.5);stroke-dasharray:1.5,1;stroke-width:0.6}
 #canvas .plan-tile-num{font-size:7px;fill:rgba(0,0,0,0.55);font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:middle}
+@media(prefers-color-scheme:dark){
+  #canvas .plan-tile{fill:rgba(255,255,255,0.04);stroke:rgba(255,255,255,0.32)}
+  #canvas .plan-tile.cut{fill:rgba(140,200,255,0.10);stroke:rgba(140,200,255,0.65)}
+  #canvas .plan-tile-num{fill:rgba(255,255,255,0.65)}
+}
+html[data-theme="dark"] #canvas .plan-tile{fill:rgba(255,255,255,0.04);stroke:rgba(255,255,255,0.32)}
+html[data-theme="dark"] #canvas .plan-tile.cut{fill:rgba(140,200,255,0.10);stroke:rgba(140,200,255,0.65)}
+html[data-theme="dark"] #canvas .plan-tile-num{fill:rgba(255,255,255,0.65)}
+html[data-theme="light"] #canvas .plan-tile{fill:rgba(127,127,127,0.04);stroke:rgba(0,0,0,0.18)}
+html[data-theme="light"] #canvas .plan-tile.cut{fill:rgba(60,140,255,0.08);stroke:rgba(60,140,255,0.5)}
+html[data-theme="light"] #canvas .plan-tile-num{fill:rgba(0,0,0,0.55)}
 
 .floor-grid{display:grid;grid-template-columns:54px 1fr;grid-template-rows:34px auto;gap:6px;align-items:stretch}
 .fx-ctrl{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px}
@@ -319,12 +353,16 @@ input[type=file]{display:none}
   <h1>浴室磁磚計畫</h1>
   <div class="actions">
     <button id="theme-toggle" title="切換主題">主題: 淺色</button>
+    <button id="proj-info" title="編輯案名、地址(匯出時帶入)">案件資訊</button>
     <button id="ex-pdf" title="列印 → 存為 PDF(向量、最穩定、跨瀏覽器)">匯出 PDF</button>
     <button id="ex-png" title="匯出當前畫面為 PNG(平面圖 + 磁磚展開圖)">匯出 PNG</button>
     <button id="ex-svg" title="匯出當前畫面為 SVG(向量,可在 Illustrator / Figma 編輯)">匯出 SVG</button>
     <button id="ex-json">JSON</button>
     <button id="im-json">載入</button>
     <input type="file" id="fi" accept="application/json,.json"/>
+    <a id="line-link" href="https://line.me/R/ti/p/%40329uzcco" target="_blank" rel="noopener" title="廢棄物清運估價 · LINE @329uzcco">
+      <span class="dot"></span>廢棄物清運估價
+    </a>
   </div>
 </div>
 
@@ -370,7 +408,7 @@ input[type=file]{display:none}
         </div>
         <div class="plan-area">
           <svg id="canvas" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-            <g id="g-w"></g><g id="g-tiles"></g><g id="g-walls"></g><g id="g-o"></g><g id="g-d"></g><g id="g-a"></g><g id="g-c"></g><g id="g-wh"></g><g id="g-oh"></g><g id="g-thr"></g><g id="g-shaft"></g><g id="g-add"></g><g id="g-edit"></g>
+            <g id="g-w"></g><g id="g-tiles"></g><g id="g-walls"></g><g id="g-o"></g><g id="g-d"></g><g id="g-a"></g><g id="g-c"></g><g id="g-wh"></g><g id="g-oh"></g><g id="g-thr"></g><g id="g-shaft"></g><g id="g-pdim"></g><g id="g-add"></g><g id="g-edit"></g>
           </svg>
         </div>
         <div class="tools">
@@ -459,6 +497,28 @@ input[type=file]{display:none}
 
 <p class="hint">匯出三種格式:<strong>PDF(推薦)</strong>—走原生列印,選「儲存為 PDF」,向量、最穩定。<strong>PNG</strong>—2x DPI 點陣,適合貼進訊息 / 社群。<strong>SVG</strong>—向量,可在 Illustrator / Figma 編輯。三種都會強制淺色主題輸出,且自動排版「平面圖 + 當前磁磚展開」並排。PNG 修了 foreignObject 跟 data URL 載入問題,這版應該可以正常匯出。</p>
 </div>
+
+<dialog id="proj-dialog" style="border:.5px solid var(--border2);border-radius:12px;padding:18px 20px;background:var(--card);color:var(--fg);min-width:320px;max-width:420px">
+  <form method="dialog" style="display:flex;flex-direction:column;gap:10px">
+    <h3 style="margin:0 0 4px;font-size:14px;font-weight:600">案件資訊(匯出時帶入)</h3>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">
+      案名
+      <input type="text" id="proj-name" placeholder="例: 王公館主臥浴室" style="height:30px;padding:0 8px;font-size:13px;border:.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--fg)">
+    </label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">
+      地址
+      <input type="text" id="proj-addr" placeholder="例: 台北市大安區仁愛路三段100號" style="height:30px;padding:0 8px;font-size:13px;border:.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--fg)">
+    </label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">
+      副標題 (英文標籤)
+      <input type="text" id="proj-sub" placeholder="Tile Layout" style="height:30px;padding:0 8px;font-size:13px;border:.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--fg)">
+    </label>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button type="button" id="proj-cancel" style="height:32px;padding:0 12px;font-size:12px;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:6px;cursor:pointer">取消</button>
+      <button type="button" id="proj-save" style="height:32px;padding:0 12px;font-size:12px;background:var(--info);color:#fff;border:none;border-radius:6px;cursor:pointer">儲存</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 (function(){
@@ -728,6 +788,85 @@ function drawHeightDim(svg, dx, topY, fullH, installH, scale, side, tileH, gr, d
     svg.appendChild(mt(dx + tickDir*22, (tilesTopY+wallBottomY)/2, fmt(installH), 'dim-label total'));
   }
 }
+// Draw plan outer dimensions — per-tile segments + overall room length/width.
+// Mirrors drawWidthDim/drawHeightDim: 'off' = nothing, 'plain' = numbers only,
+// 'arch' = dim line + ticks + labels. W2/W4 (vertical) labels read along the line.
+function drawPlanOuterDim(g, scale, pad, dimStyle){
+  if(dimStyle === 'off') return;
+  const arch = dimStyle === 'arch';
+  const r = state.room;
+  const L = r.length * scale;
+  const W = r.width * scale;
+  const left = pad, right = pad + L;
+  const top  = pad, bottom = pad + W;
+  const gr = grout();
+  const fW = state.tiles.floorW;
+  const fH = state.tiles.floorH;
+  const fOx = (state.tiles.floorOffset && state.tiles.floorOffset.x) || 0;
+  const fOy = (state.tiles.floorOffset && state.tiles.floorOffset.y) || 0;
+  const off1 = arch ? 22 : 14;  // segments offset from edge
+  const off2 = arch ? 44 : 30;  // total offset from edge
+
+  // ===== Bottom: per-tile width row + total =====
+  const ySeg = bottom + off1;
+  const yTot = bottom + off2;
+  const segsX = getRowSegments(r.length, fW, gr, 'aligned', 0, fOx);
+  if(arch){
+    g.appendChild(ml({x:left, y:ySeg}, {x:right, y:ySeg}, 'dim-line'));
+    const bsX = new Set(); bsX.add(0); bsX.add(r.length);
+    for(const s of segsX){ bsX.add(s.start); bsX.add(s.end); }
+    for(const b of bsX){
+      g.appendChild(ml({x:left+b*scale, y:ySeg-3}, {x:left+b*scale, y:ySeg+3}, 'dim-tick'));
+    }
+  }
+  for(const s of segsX){
+    const cx = left + ((s.start+s.end)/2)*scale;
+    g.appendChild(mt(cx, ySeg + (arch?11:0), fmt(s.width), 'dim-label'));
+  }
+  // total row
+  if(arch){
+    g.appendChild(ml({x:left, y:yTot}, {x:right, y:yTot}, 'dim-line total'));
+    g.appendChild(ml({x:left,  y:yTot-3}, {x:left,  y:yTot+3}, 'dim-tick'));
+    g.appendChild(ml({x:right, y:yTot-3}, {x:right, y:yTot+3}, 'dim-tick'));
+    g.appendChild(ml({x:left,  y:bottom+2}, {x:left,  y:yTot-2}, 'dim-line'));
+    g.appendChild(ml({x:right, y:bottom+2}, {x:right, y:yTot-2}, 'dim-line'));
+  }
+  g.appendChild(mt((left+right)/2, yTot + (arch?11:0), fmt(r.length), 'dim-label total'));
+
+  // ===== Right: per-tile height column + total — labels rotated to read along the line =====
+  const xSeg = right + off1;
+  const xTot = right + off2;
+  const segsY = getColSegments(r.width, fH, gr, fOy);
+  if(arch){
+    g.appendChild(ml({x:xSeg, y:top}, {x:xSeg, y:bottom}, 'dim-line'));
+    const bsY = new Set(); bsY.add(0); bsY.add(r.width);
+    for(const s of segsY){ bsY.add(s.start); bsY.add(s.end); }
+    for(const b of bsY){
+      g.appendChild(ml({x:xSeg-3, y:top+b*scale}, {x:xSeg+3, y:top+b*scale}, 'dim-tick'));
+    }
+  }
+  for(const s of segsY){
+    const cy = top + ((s.start+s.end)/2)*scale;
+    const lx = xSeg + (arch?11:0);
+    const lbl = mt(lx, cy, fmt(s.height), 'dim-label');
+    lbl.setAttribute('transform', `rotate(-90 ${lx} ${cy})`);
+    g.appendChild(lbl);
+  }
+  // total column
+  if(arch){
+    g.appendChild(ml({x:xTot, y:top}, {x:xTot, y:bottom}, 'dim-line total'));
+    g.appendChild(ml({x:xTot-3, y:top},    {x:xTot+3, y:top},    'dim-tick'));
+    g.appendChild(ml({x:xTot-3, y:bottom}, {x:xTot+3, y:bottom}, 'dim-tick'));
+    g.appendChild(ml({x:right+2, y:top},    {x:xTot-2, y:top},    'dim-line'));
+    g.appendChild(ml({x:right+2, y:bottom}, {x:xTot-2, y:bottom}, 'dim-line'));
+  }
+  const totLx = xTot + (arch?11:0);
+  const totCy = (top+bottom)/2;
+  const lblTot = mt(totLx, totCy, fmt(r.width), 'dim-label total');
+  lblTot.setAttribute('transform', `rotate(-90 ${totLx} ${totCy})`);
+  g.appendChild(lblTot);
+}
+
 function thresholdRect(){
   const t=state.threshold; if(!t) return null;
   const r=state.room;
@@ -958,12 +1097,12 @@ function wallPath(name, scale, pad){
 function renderPlan(floorData){
   const svg=$('canvas');
   const Gw=$('g-w'),Gtiles=$('g-tiles'),Gwalls=$('g-walls'),Go=$('g-o'),Gd=$('g-d'),Ga=$('g-a'),Gc=$('g-c'),
-        Gwh=$('g-wh'),Goh=$('g-oh'),Gthr=$('g-thr'),Gshaft=$('g-shaft'),Gadd=$('g-add'),Gedit=$('g-edit');
-  [Gw,Gtiles,Gwalls,Go,Gd,Ga,Gc,Gwh,Goh,Gthr,Gshaft,Gadd,Gedit].forEach(g=>g.innerHTML='');
+        Gwh=$('g-wh'),Goh=$('g-oh'),Gthr=$('g-thr'),Gshaft=$('g-shaft'),Gpdim=$('g-pdim'),Gadd=$('g-add'),Gedit=$('g-edit');
+  [Gw,Gtiles,Gwalls,Go,Gd,Ga,Gc,Gwh,Goh,Gthr,Gshaft,Gpdim,Gadd,Gedit].forEach(g=>g.innerHTML='');
 
   const r=state.room;
   const scale=planScale();
-  const pad=50;
+  const pad=80;
   const svgW = r.length*scale + pad*2;
   const svgH = r.width*scale + pad*2;
   svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
@@ -1145,7 +1284,11 @@ function renderPlan(floorData){
         v=>applyWallLen(name, v),
         {wallStyle:true, width:64, height:26}));
     } else {
-      Gd.appendChild(mt(lblPos.x, lblPos.y, name+' '+wallLengthOf(name)+' cm', 'dl'));
+      // dim on (plain / arch): outer 標註已含尺寸,wall label 只顯示牆名,避免重複
+      const lblText = (state.tiles.dimStyle === 'off')
+        ? (name+' '+wallLengthOf(name)+' cm')
+        : name;
+      Gd.appendChild(mt(lblPos.x, lblPos.y, lblText, 'dl'));
     }
 
     // wall hit area
@@ -1302,6 +1445,9 @@ function renderPlan(floorData){
       render();
     }
   });
+
+  // Outer overall dimensions — driven by current dim-style (synced with wall preview)
+  drawPlanOuterDim(Gpdim, scale, pad, state.tiles.dimStyle);
 }
 
 function svgPt(e){
@@ -2604,9 +2750,17 @@ function downloadBlob(blob, filename){
   setTimeout(() => URL.revokeObjectURL(a.href), 100);
 }
 
-function exportFilename(ext){
-  const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  return `tile-plan-${ts}.${ext}`;
+function exportFilename(ext, suffix){
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  // Sanitize: drop chars illegal on Windows/macOS filenames, collapse spaces.
+  const clean = s => String(s).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
+  const proj = (typeof getProjectInfo === 'function') ? getProjectInfo() : {name:''};
+  const parts = ['tile-plan'];
+  const name = clean(proj.name);
+  if(name) parts.push(name);
+  parts.push(date);
+  if(suffix) parts.push(suffix);
+  return `${parts.join('_')}.${ext}`;
 }
 
 function withForcedLightTheme(fn){
@@ -2626,65 +2780,371 @@ function withForcedLightTheme(fn){
     });
 }
 
+// Export wrapper: forces light theme + 建築風 dim notation, restores both after.
+function withExportContext(fn){
+  return withForcedLightTheme(async () => {
+    const prevDim = state.tiles.dimStyle;
+    if(prevDim !== 'arch'){
+      state.tiles.dimStyle = 'arch';
+      if(typeof render === 'function') render();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+    try {
+      return await fn();
+    } finally {
+      if(prevDim !== 'arch'){
+        state.tiles.dimStyle = prevDim;
+        if(typeof render === 'function') render();
+      }
+    }
+  });
+}
+
+// Read current stats DOM — shared by PNG / SVG / PDF export.
+function getExportStatsData(){
+  const g = id => { const el = $(id); return el ? el.textContent : '—'; };
+  const row = pfx => ({
+    full: { label: '全片', value: g('s-'+pfx+'-full'), unit: '片' },
+    cut:  { label: '裁切', value: g('s-'+pfx+'-cut'),  unit: '片' },
+    buy:  { label: '估購', value: g('s-'+pfx+'-buy'),  unit: g('s-'+pfx+'-buy-sub') },
+    area: { label: '鋪貼', value: g('s-'+pfx+'-area'), unit: 'm²  /  '+g('s-'+pfx+'-pin')+' 坪' }
+  });
+  return { wall: row('w'), floor: row('f') };
+}
+function getExportStatsLines(){
+  const d = getExportStatsData();
+  const fmt = (lbl, r) => `${lbl}:全片 ${r.full.value} 片  /  裁切 ${r.cut.value} 片  /  估購 ${r.buy.value} ${r.buy.unit}  /  鋪貼 ${r.area.value} ${r.area.unit}`;
+  return [fmt('牆面磁磚', d.wall), fmt('地板磁磚', d.floor)];
+}
+
+// ===== Kami design tokens (shared by PNG / SVG / PDF export) =====
+const KAMI = {
+  parchment:'#f5f4ed', ivory:'#faf9f5', sand:'#e8e6dc', borderSoft:'#e5e3d8',
+  brand:'#1B365D', nearBlack:'#141413', darkWarm:'#3d3d3a',
+  olive:'#504e49', stone:'#6b6a64',
+  // serif key kept for code compatibility — value is now a modern sans-serif system stack
+  serif: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Microsoft YaHei", Arial, sans-serif',
+  mono: '"JetBrains Mono", "SF Mono", Consolas, "Microsoft JhengHei", monospace'
+};
+
+// LINE watermark — fixed branding
+const LINE_WATERMARK = '官方LINE: @329uzcco · 廢棄物清運快速估價';
+
+// ===== Project info (案名/地址/副標題) =====
+const PROJ_KEY = 'tilePlanner.projectInfo.v1';
+function getProjectInfo(){
+  try {
+    const raw = localStorage.getItem(PROJ_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      return { name: d.name||'', addr: d.addr||'', sub: d.sub||'Tile Layout' };
+    }
+  } catch(_) {}
+  return { name:'', addr:'', sub:'Tile Layout' };
+}
+function setProjectInfo(p){
+  try { localStorage.setItem(PROJ_KEY, JSON.stringify(p)); } catch(_) {}
+}
+(function initProjDialog(){
+  const dlg = $('proj-dialog');
+  if(!dlg) return;
+  const fill = () => {
+    const p = getProjectInfo();
+    $('proj-name').value = p.name;
+    $('proj-addr').value = p.addr;
+    $('proj-sub').value  = p.sub;
+  };
+  const open = () => {
+    fill();
+    if(typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open','');
+  };
+  const close = () => {
+    if(typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
+  };
+  $('proj-info').addEventListener('click', open);
+  $('proj-cancel').addEventListener('click', close);
+  $('proj-save').addEventListener('click', () => {
+    setProjectInfo({
+      name: $('proj-name').value.trim(),
+      addr: $('proj-addr').value.trim(),
+      sub:  $('proj-sub').value.trim() || 'Tile Layout'
+    });
+    close();
+  });
+})();
+
 async function exportPNG(){
   const btn = $('ex-png');
   const oldText = btn ? btn.textContent : '';
   if(btn){ btn.textContent = '匯出中…'; btn.disabled = true; }
   try {
-    await withForcedLightTheme(async () => {
+    await withExportContext(async () => {
       const css = getExportCSS();
       const planSvg = $('canvas');
-      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
-      const tileSvg = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
+      const wallsSvg = $('tile-walls');
+      const unfoldedSvg = $('tile-unfolded');
 
       const planRes = await svgToImage(planSvg, css);
-      const tileRes = await svgToImage(tileSvg, css);
+      const wallsRes = await svgToImage(wallsSvg, css);
+      const unfoldedRes = await svgToImage(unfoldedSvg, css);
+      const tileRes = wallsRes; // page 1 uses walls
 
+      const r = state.room, t = state.tiles;
+      const stats = getExportStatsData();
+      const proj = getProjectInfo();
+      const ts = new Date().toLocaleString('zh-TW');
       const dpi = 2;
-      const pad = 24;
-      const gap = 32;
-      const headerH = 56;
-      const totalW = planRes.w + tileRes.w + gap + pad * 2;
-      const totalH = Math.max(planRes.h, tileRes.h) + pad * 2 + headerH;
+
+      // Layout tokens (px on canvas)
+      const PAD = 36, GAP = 28, CARD_PAD = 18, METRIC_GAP = 10;
+      const titleH = 32, subH = 18, ruleGap = 16;
+      const projLineH = (proj.name || proj.addr) ? 20 : 0;
+      const subtitleH = 16;
+      const metricRowH = 64;
+      const tagH = 22;
+      const footerH = 28;
+
+      // 1:2 body layout — plan column 1/3, tile column 2/3 (architectural drawing convention)
+      const tileTargetW = 720;
+      const planTargetW = tileTargetW / 2;
+      const planScale = planTargetW / planRes.w;
+      const tileScale = tileTargetW / tileRes.w;
+      const planRenderW = planTargetW;
+      const planRenderH = planRes.h * planScale;
+      const tileRenderW = tileTargetW;
+      const tileRenderH = tileRes.h * tileScale;
+
+      const bodyW = planRenderW + tileRenderW + GAP + CARD_PAD * 4;
+      const totalW = bodyW + PAD * 2;
+      const innerW = totalW - PAD * 2;
+
+      const headerBlockH = titleH + subtitleH + projLineH + subH + ruleGap;
+      const metricBlockH = metricRowH * 2 + METRIC_GAP;
+      const bodyH = Math.max(planRenderH, tileRenderH) + CARD_PAD * 2;
+      const beforeBody = PAD + headerBlockH + 20 + metricBlockH + 24 + tagH + 8;
+      const totalH = beforeBody + bodyH + 20 + footerH + PAD;
 
       const canvas = document.createElement('canvas');
       canvas.width = totalW * dpi;
       canvas.height = totalH * dpi;
       const ctx = canvas.getContext('2d');
       ctx.scale(dpi, dpi);
-      // White background
-      ctx.fillStyle = '#ffffff';
+
+      // Parchment background
+      ctx.fillStyle = KAMI.parchment;
       ctx.fillRect(0, 0, totalW, totalH);
 
-      // Header text
-      const r = state.room;
-      const t = state.tiles;
-      const title = `浴室磁磚計畫`;
-      const sub1 = `房間 ${r.length}×${r.width}cm  牆高 ${r.wallHeight}cm  安裝高 ${r.installHeight}cm`;
-      const sub2 = `牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm  縫 ${t.groutMm}mm`;
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
-      ctx.fillText(title, pad, 22);
-      ctx.font = '12px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
-      ctx.fillStyle = '#444';
-      ctx.fillText(sub1, pad, 38);
-      ctx.fillStyle = '#666';
-      ctx.fillText(sub2, pad, 52);
+      const fSerif = (px, w) => `${w||500} ${px}px ${KAMI.serif}`;
+      const fSans  = (px, w) => `${w||400} ${px}px ${KAMI.serif}`;
 
-      // Sub-section labels
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif';
-      ctx.fillStyle = '#888';
-      ctx.fillText('平面圖', pad, pad + headerH - 4);
-      ctx.fillText(tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚', pad + planRes.w + gap, pad + headerH - 4);
+      // ===== Header =====
+      let y = PAD;
+      const titleBarH = titleH + subtitleH + projLineH - 4;
+      // brand left bar (spans title + subtitle + proj line)
+      ctx.fillStyle = KAMI.brand;
+      ctx.fillRect(PAD, y, 2.5, titleBarH);
+      // title
+      ctx.fillStyle = KAMI.nearBlack;
+      ctx.font = fSerif(24, 500);
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('浴室磁磚計畫', PAD + 12, y + 22);
+      // meta date right-aligned
+      ctx.fillStyle = KAMI.stone;
+      ctx.font = fSerif(11, 400);
+      ctx.textAlign = 'right';
+      ctx.fillText(ts, totalW - PAD, y + 20);
+      ctx.textAlign = 'left';
 
-      // Draw images
-      ctx.drawImage(planRes.img, pad, pad + headerH, planRes.w, planRes.h);
-      ctx.drawImage(tileRes.img, pad + planRes.w + gap, pad + headerH, tileRes.w, tileRes.h);
+      y += titleH;
+      // subtitle (uppercase eyebrow, brand color, letter-spaced)
+      const subText = (proj.sub || 'Tile Layout').toUpperCase();
+      ctx.fillStyle = KAMI.brand;
+      ctx.font = '600 10px ' + KAMI.serif;
+      ctx.fillText(subText, PAD + 12, y + 12, undefined);
+      // wide letter-spacing simulation: draw chars individually
+      // (canvas has no letter-spacing; use measureText to space)
+      // For simplicity we keep the default rendering — modern Chrome supports ctx.letterSpacing
+      if('letterSpacing' in ctx){ ctx.letterSpacing = '1.5px'; ctx.fillText(subText, PAD + 12, y + 12); ctx.letterSpacing = '0px'; }
+      y += subtitleH;
 
+      // project name + address line
+      if(proj.name || proj.addr){
+        let x = PAD + 12;
+        if(proj.name){
+          ctx.fillStyle = KAMI.nearBlack;
+          ctx.font = fSerif(13, 500);
+          ctx.fillText(proj.name, x, y + 12);
+          x += ctx.measureText(proj.name).width;
+        }
+        if(proj.name && proj.addr){
+          ctx.fillStyle = '#b8b7b0';
+          ctx.fillText('  ·  ', x, y + 12);
+          x += ctx.measureText('  ·  ').width;
+        }
+        if(proj.addr){
+          ctx.fillStyle = KAMI.olive;
+          ctx.font = fSerif(12, 400);
+          ctx.fillText(proj.addr, x, y + 12);
+        }
+        y += projLineH;
+      }
+
+      // subtitle (specs in one warm-gray line)
+      const spec = `房間 ${r.length}×${r.width} cm  ·  牆高 ${r.wallHeight} cm  ·  安裝高 ${r.installHeight} cm   |   牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)} mm  ·  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)} mm  ·  縫 ${t.groutMm} mm`;
+      ctx.fillStyle = KAMI.olive;
+      ctx.font = fSans(11, 400);
+      ctx.fillText(spec, PAD + 12, y + 12);
+      y += subH;
+
+      // hairline divider
+      y += 10;
+      ctx.strokeStyle = KAMI.sand;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(totalW - PAD, y); ctx.stroke();
+      y += 14;
+
+      // ===== Metric grid (2 rows x 4 cards) =====
+      const rowLabelW = 70;
+      const cellGap = 8;
+      const cellW = (innerW - rowLabelW - cellGap * 4) / 4;
+
+      function drawMetricRow(rowY, rowLabel, data){
+        // row label
+        ctx.fillStyle = KAMI.nearBlack;
+        ctx.font = fSerif(12, 500);
+        ctx.fillText(rowLabel, PAD, rowY + metricRowH / 2 + 4);
+
+        const cells = [data.full, data.cut, data.buy, data.area];
+        let cx = PAD + rowLabelW;
+        for(const c of cells){
+          // card bg
+          ctx.fillStyle = KAMI.ivory;
+          roundRect(ctx, cx, rowY, cellW, metricRowH, 6, true, false);
+          ctx.strokeStyle = KAMI.sand;
+          ctx.lineWidth = 0.5;
+          roundRect(ctx, cx + 0.25, rowY + 0.25, cellW - 0.5, metricRowH - 0.5, 6, false, true);
+
+          // label (top, small caps)
+          ctx.fillStyle = KAMI.olive;
+          ctx.font = '600 9px ' + KAMI.serif;
+          ctx.fillText(c.label, cx + 12, rowY + 18);
+
+          // value (brand, serif, tabular)
+          ctx.fillStyle = KAMI.brand;
+          ctx.font = fSerif(20, 500);
+          ctx.fillText(c.value, cx + 12, rowY + 44);
+
+          // unit suffix (after the number)
+          const valW = ctx.measureText(c.value).width;
+          ctx.fillStyle = KAMI.olive;
+          ctx.font = fSans(10, 400);
+          ctx.fillText(c.unit, cx + 12 + valW + 5, rowY + 44);
+
+          cx += cellW + cellGap;
+        }
+      }
+      drawMetricRow(y, '牆面磁磚', stats.wall);
+      drawMetricRow(y + metricRowH + METRIC_GAP, '地板磁磚', stats.floor);
+      y += metricBlockH + 24;
+
+      // ===== Body section: tags + image cards (architectural style) =====
+      const leftX = PAD;
+      const leftCardW = planRenderW + CARD_PAD * 2;
+      const rightX = leftX + leftCardW + GAP;
+      const rightCardW = tileRenderW + CARD_PAD * 2;
+
+      // Architectural tag — thin outline box, monospace, drawing number
+      function drawTag(x, ty, num, name){
+        const tagFont = '500 9px ' + KAMI.mono;
+        ctx.font = tagFont;
+        const fullText = `${num} · ${name}`;
+        const w = ctx.measureText(fullText).width + 16;
+        ctx.strokeStyle = KAMI.stone;
+        ctx.lineWidth = 0.4;
+        ctx.strokeRect(x + 0.2, ty + 0.2, w - 0.4, tagH - 0.4);
+        // draw num in brand, name in dark warm
+        ctx.font = '600 9px ' + KAMI.mono;
+        ctx.fillStyle = KAMI.brand;
+        ctx.fillText(num, x + 8, ty + 15);
+        const numW = ctx.measureText(num).width;
+        ctx.font = '500 9px ' + KAMI.mono;
+        ctx.fillStyle = KAMI.darkWarm;
+        ctx.fillText(' · ' + name, x + 8 + numW, ty + 15);
+      }
+      drawTag(leftX, y, 'A-01', 'PLAN · 平面圖');
+      drawTag(rightX, y, 'A-02', 'WALL TILES · 牆面磁磚');
+      y += tagH + 8;
+
+      // Image cards — architectural thin outline, no fill
+      const cardH = Math.max(planRenderH, tileRenderH) + CARD_PAD * 2;
+      function drawImageCard(x, w, h, img, imgW, imgH){
+        ctx.strokeStyle = KAMI.stone;
+        ctx.lineWidth = 0.4;
+        ctx.strokeRect(x + 0.2, y + 0.2, w - 0.4, h - 0.4);
+        const iy = y + (h - imgH) / 2;
+        ctx.drawImage(img, x + CARD_PAD, iy, imgW, imgH);
+      }
+      drawImageCard(leftX, leftCardW, cardH, planRes.img, planRenderW, planRenderH);
+      drawImageCard(rightX, rightCardW, cardH, tileRes.img, tileRenderW, tileRenderH);
+      y += cardH + 16;
+
+      // Footer removed — date already shown in header right-aligned meta.
+
+      // ===== Download Page 1 (layout) =====
       await new Promise((resolve, reject) => {
         canvas.toBlob(blob => {
           if(!blob){ reject(new Error('canvas.toBlob 失敗')); return; }
-          downloadBlob(blob, exportFilename('png'));
+          downloadBlob(blob, exportFilename('png', '01_layout'));
+          resolve();
+        }, 'image/png');
+      });
+
+      // ===== Page 2: unfolded only (no header / metric, full-width image) =====
+      const p2_w = totalW;
+      const p2_innerW = p2_w - PAD * 2;
+      const p2_imgRenderW = p2_innerW - CARD_PAD * 2;
+      const p2_imgRenderH = unfoldedRes.h * (p2_imgRenderW / unfoldedRes.w);
+      const p2_cardH = p2_imgRenderH + CARD_PAD * 2;
+      const p2_h = PAD * 2 + tagH + 8 + p2_cardH;
+
+      const canvas2 = document.createElement('canvas');
+      canvas2.width = p2_w * dpi;
+      canvas2.height = p2_h * dpi;
+      const ctx2 = canvas2.getContext('2d');
+      ctx2.scale(dpi, dpi);
+      ctx2.fillStyle = KAMI.parchment;
+      ctx2.fillRect(0, 0, p2_w, p2_h);
+
+      let y2 = PAD;
+      // tag A-03
+      const tagText = ' · UNFOLDED · 紙盒展開';
+      ctx2.font = '500 9px ' + KAMI.mono;
+      const numW2 = ctx2.measureText('A-03').width;
+      const restW = ctx2.measureText(tagText).width;
+      const tagWidth = numW2 + restW + 16;
+      ctx2.strokeStyle = KAMI.stone;
+      ctx2.lineWidth = 0.4;
+      ctx2.strokeRect(PAD + 0.2, y2 + 0.2, tagWidth - 0.4, tagH - 0.4);
+      ctx2.font = '600 9px ' + KAMI.mono;
+      ctx2.fillStyle = KAMI.brand;
+      ctx2.fillText('A-03', PAD + 8, y2 + 15);
+      ctx2.font = '500 9px ' + KAMI.mono;
+      ctx2.fillStyle = KAMI.darkWarm;
+      ctx2.fillText(tagText, PAD + 8 + numW2, y2 + 15);
+      y2 += tagH + 8;
+
+      // image card
+      ctx2.strokeStyle = KAMI.stone;
+      ctx2.lineWidth = 0.4;
+      ctx2.strokeRect(PAD + 0.2, y2 + 0.2, p2_innerW - 0.4, p2_cardH - 0.4);
+      ctx2.drawImage(unfoldedRes.img, PAD + CARD_PAD, y2 + CARD_PAD, p2_imgRenderW, p2_imgRenderH);
+
+      await new Promise((resolve, reject) => {
+        canvas2.toBlob(blob => {
+          if(!blob){ reject(new Error('canvas.toBlob 失敗')); return; }
+          downloadBlob(blob, exportFilename('png', '02_unfolded'));
           resolve();
         }, 'image/png');
       });
@@ -2697,40 +3157,69 @@ async function exportPNG(){
   }
 }
 
+// Rounded-rect helper for canvas
+function roundRect(ctx, x, y, w, h, r, fill, stroke){
+  if(w < 2*r) r = w/2; if(h < 2*r) r = h/2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
+
 async function exportSVG(){
   const btn = $('ex-svg');
   const oldText = btn ? btn.textContent : '';
   if(btn){ btn.textContent = '匯出中…'; btn.disabled = true; }
   try {
-    await withForcedLightTheme(async () => {
+    await withExportContext(async () => {
       const css = getExportCSS();
       const planSvg = $('canvas');
-      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
-      const tileSvg = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
+      const wallsSvg = $('tile-walls');
+      const unfoldedSvg = $('tile-unfolded');
+      const tileSvg = wallsSvg; // page 1 uses walls
 
-      // Build a combined SVG: header + plan + tile, side by side
       const planBox = planSvg.getBoundingClientRect();
-      const tileBox = tileSvg.getBoundingClientRect();
+      const tileBox = wallsSvg.getBoundingClientRect();
+      const ufBox = unfoldedSvg.getBoundingClientRect();
       const pw = Math.max(1, Math.round(planBox.width)),  ph = Math.max(1, Math.round(planBox.height));
       const tw2 = Math.max(1, Math.round(tileBox.width)), th2 = Math.max(1, Math.round(tileBox.height));
-      const pad = 24, gap = 32, headerH = 56;
-      const totalW = pw + tw2 + gap + pad * 2;
-      const totalH = Math.max(ph, th2) + pad * 2 + headerH;
+      const ufw = Math.max(1, Math.round(ufBox.width)),   ufh = Math.max(1, Math.round(ufBox.height));
 
-      // Clone and prepare each inner SVG
-      function prep(src, x, y, w, h){
-        const c = src.cloneNode(true);
-        c.setAttribute('x', x);
-        c.setAttribute('y', y);
-        c.setAttribute('width', w);
-        c.setAttribute('height', h);
-        return c;
-      }
-      const r = state.room;
-      const t = state.tiles;
-      const title = '浴室磁磚計畫';
-      const sub1 = `房間 ${r.length}×${r.width}cm  牆高 ${r.wallHeight}cm  安裝高 ${r.installHeight}cm`;
-      const sub2 = `牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm  縫 ${t.groutMm}mm`;
+      const r = state.room, t = state.tiles;
+      const stats = getExportStatsData();
+      const proj = getProjectInfo();
+      const ts = new Date().toLocaleString('zh-TW');
+
+      // Match PNG layout tokens
+      const PAD = 36, GAP = 28, CARD_PAD = 18, METRIC_GAP = 10;
+      const titleH = 32, subH = 18;
+      const subtitleH = 16;
+      const projLineH = (proj.name || proj.addr) ? 20 : 0;
+      const metricRowH = 64;
+      const tagH = 22;
+      const footerH = 28;
+
+      // 1:2 body layout — plan 1/3, tile 2/3
+      const tileTargetW = 720;
+      const planTargetW = tileTargetW / 2;
+      const planRenderW = planTargetW;
+      const planRenderH = ph * (planTargetW / pw);
+      const tileRenderW = tileTargetW;
+      const tileRenderH = th2 * (tileTargetW / tw2);
+
+      const bodyW = planRenderW + tileRenderW + GAP + CARD_PAD * 4;
+      const totalW = bodyW + PAD * 2;
+      const innerW = totalW - PAD * 2;
+      const headerBlockH = titleH + subtitleH + projLineH + subH + 16;
+      const metricBlockH = metricRowH * 2 + METRIC_GAP;
+      const cardH = Math.max(planRenderH, tileRenderH) + CARD_PAD * 2;
+      const beforeBody = PAD + headerBlockH + 20 + metricBlockH + 24 + tagH + 8;
+      const totalH = beforeBody + cardH + 20 + footerH + PAD;
 
       const ns = 'http://www.w3.org/2000/svg';
       const out = document.createElementNS(ns, 'svg');
@@ -2739,43 +3228,248 @@ async function exportSVG(){
       out.setAttribute('height', totalH);
       out.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
 
-      // Inject CSS
+      // Inject CSS for inner SVG rendering
       const styleEl = document.createElementNS(ns, 'style');
       styleEl.textContent = css;
       out.appendChild(styleEl);
 
-      // White background
+      // Parchment bg
       const bg = document.createElementNS(ns, 'rect');
       bg.setAttribute('x', 0); bg.setAttribute('y', 0);
       bg.setAttribute('width', totalW); bg.setAttribute('height', totalH);
-      bg.setAttribute('fill', '#ffffff');
+      bg.setAttribute('fill', KAMI.parchment);
       out.appendChild(bg);
 
-      // Header text
-      const fontStack = '-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif';
-      const mkText = (x, y, text, fs, color, weight) => {
+      // Primitive helpers
+      const mkRect = (x, y, w, h, fill, opts={}) => {
+        const e = document.createElementNS(ns, 'rect');
+        e.setAttribute('x', x); e.setAttribute('y', y);
+        e.setAttribute('width', w); e.setAttribute('height', h);
+        if(fill) e.setAttribute('fill', fill);
+        if(opts.r != null) { e.setAttribute('rx', opts.r); e.setAttribute('ry', opts.r); }
+        if(opts.stroke){ e.setAttribute('stroke', opts.stroke); e.setAttribute('stroke-width', opts.sw||0.5); }
+        if(opts.noFill) e.setAttribute('fill', 'none');
+        return e;
+      };
+      const mkText = (x, y, text, fs, color, weight, anchor) => {
         const e = document.createElementNS(ns, 'text');
         e.setAttribute('x', x); e.setAttribute('y', y);
-        e.setAttribute('font-family', fontStack);
+        e.setAttribute('font-family', KAMI.serif);
         e.setAttribute('font-size', fs);
         if(weight) e.setAttribute('font-weight', weight);
+        if(anchor) e.setAttribute('text-anchor', anchor);
         e.setAttribute('fill', color);
         e.textContent = text;
         return e;
       };
-      out.appendChild(mkText(pad, 22, title, 16, '#1a1a1a', 600));
-      out.appendChild(mkText(pad, 38, sub1, 12, '#444'));
-      out.appendChild(mkText(pad, 52, sub2, 12, '#666'));
-      out.appendChild(mkText(pad, pad + headerH - 4, '平面圖', 11, '#888'));
-      out.appendChild(mkText(pad + pw + gap, pad + headerH - 4, tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚', 11, '#888'));
+      const mkLine = (x1, y1, x2, y2, color, sw=0.5) => {
+        const e = document.createElementNS(ns, 'line');
+        e.setAttribute('x1', x1); e.setAttribute('y1', y1);
+        e.setAttribute('x2', x2); e.setAttribute('y2', y2);
+        e.setAttribute('stroke', color); e.setAttribute('stroke-width', sw);
+        return e;
+      };
 
-      // Inner SVGs
-      out.appendChild(prep(planSvg, pad, pad + headerH, pw, ph));
-      out.appendChild(prep(tileSvg, pad + pw + gap, pad + headerH, tw2, th2));
+      // ===== Header =====
+      let y = PAD;
+      const titleBarH = titleH + subtitleH + projLineH - 4;
+      // brand left bar
+      out.appendChild(mkRect(PAD, y, 2.5, titleBarH, KAMI.brand, {r:1.2}));
+      // title
+      out.appendChild(mkText(PAD + 12, y + 22, '浴室磁磚計畫', 24, KAMI.nearBlack, 500));
+      // meta date (right)
+      out.appendChild(mkText(totalW - PAD, y + 20, ts, 11, KAMI.stone, 400, 'end'));
+      y += titleH;
 
+      // subtitle (uppercase eyebrow)
+      const subEyebrow = mkText(PAD + 12, y + 12, (proj.sub || 'Tile Layout').toUpperCase(), 10, KAMI.brand, 600);
+      subEyebrow.setAttribute('letter-spacing', '1.5');
+      out.appendChild(subEyebrow);
+      y += subtitleH;
+
+      // project name + address
+      if(proj.name || proj.addr){
+        let parts = [];
+        if(proj.name) parts.push({text: proj.name, color: KAMI.nearBlack, weight: 500, fs: 13});
+        if(proj.name && proj.addr) parts.push({text: '  ·  ', color: '#b8b7b0', weight: 400, fs: 13});
+        if(proj.addr) parts.push({text: proj.addr, color: KAMI.olive, weight: 400, fs: 12});
+        // Compose as single <text> with tspans
+        const tEl = document.createElementNS(ns, 'text');
+        tEl.setAttribute('x', PAD + 12);
+        tEl.setAttribute('y', y + 13);
+        tEl.setAttribute('font-family', KAMI.serif);
+        for(const p of parts){
+          const ts2 = document.createElementNS(ns, 'tspan');
+          ts2.setAttribute('font-size', p.fs);
+          ts2.setAttribute('font-weight', p.weight);
+          ts2.setAttribute('fill', p.color);
+          ts2.textContent = p.text;
+          tEl.appendChild(ts2);
+        }
+        out.appendChild(tEl);
+        y += projLineH;
+      }
+
+      // spec line (warm-gray)
+      const spec = `房間 ${r.length}×${r.width} cm  ·  牆高 ${r.wallHeight} cm  ·  安裝高 ${r.installHeight} cm   |   牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)} mm  ·  地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)} mm  ·  縫 ${t.groutMm} mm`;
+      out.appendChild(mkText(PAD + 12, y + 12, spec, 11, KAMI.olive, 400));
+      y += subH;
+
+      // hairline
+      y += 10;
+      out.appendChild(mkLine(PAD, y, totalW - PAD, y, KAMI.sand));
+      y += 14;
+
+      // ===== Metric grid =====
+      const rowLabelW = 70;
+      const cellGap = 8;
+      const cellW = (innerW - rowLabelW - cellGap * 4) / 4;
+
+      function drawMetricRow(rowY, rowLabel, data){
+        out.appendChild(mkText(PAD, rowY + metricRowH/2 + 4, rowLabel, 12, KAMI.nearBlack, 500));
+        const cells = [data.full, data.cut, data.buy, data.area];
+        let cx = PAD + rowLabelW;
+        for(const c of cells){
+          out.appendChild(mkRect(cx, rowY, cellW, metricRowH, KAMI.ivory, {r:6, stroke: KAMI.sand, sw:0.5}));
+          out.appendChild(mkText(cx + 12, rowY + 18, c.label, 9, KAMI.olive, 600));
+          // value + unit on same line
+          const valText = mkText(cx + 12, rowY + 44, c.value, 20, KAMI.brand, 500);
+          out.appendChild(valText);
+          // unit positioned with offset (estimated width — avoid getBBox since not yet rendered)
+          const valWidthEst = String(c.value).length * 12;
+          out.appendChild(mkText(cx + 12 + valWidthEst + 5, rowY + 44, c.unit, 10, KAMI.olive, 400));
+          cx += cellW + cellGap;
+        }
+      }
+      drawMetricRow(y, '牆面磁磚', stats.wall);
+      drawMetricRow(y + metricRowH + METRIC_GAP, '地板磁磚', stats.floor);
+      y += metricBlockH + 24;
+
+      // ===== Tags + image cards (architectural style) =====
+      const leftX = PAD;
+      const leftCardW = planRenderW + CARD_PAD * 2;
+      const rightX = leftX + leftCardW + GAP;
+      const rightCardW = tileRenderW + CARD_PAD * 2;
+
+      // Architectural tag: thin outline + monospace + drawing number
+      function drawTag(x, ty, num, name){
+        const txt = `${num} · ${name}`;
+        const w = txt.length * 5.4 + 16;
+        out.appendChild(mkRect(x, ty, w, tagH, null, {r:0, stroke: KAMI.stone, sw:0.4, noFill:true}));
+        // num + name in same <text> with tspans
+        const t = document.createElementNS(ns, 'text');
+        t.setAttribute('x', x + 8); t.setAttribute('y', ty + 15);
+        t.setAttribute('font-family', KAMI.mono);
+        t.setAttribute('font-size', 9);
+        const tsNum = document.createElementNS(ns, 'tspan');
+        tsNum.setAttribute('font-weight', 600); tsNum.setAttribute('fill', KAMI.brand);
+        tsNum.textContent = num;
+        const tsName = document.createElementNS(ns, 'tspan');
+        tsName.setAttribute('font-weight', 500); tsName.setAttribute('fill', KAMI.darkWarm);
+        tsName.textContent = ' · ' + name;
+        t.appendChild(tsNum); t.appendChild(tsName);
+        out.appendChild(t);
+      }
+      drawTag(leftX, y, 'A-01', 'PLAN · 平面圖');
+      drawTag(rightX, y, 'A-02', 'WALL TILES · 牆面磁磚');
+      y += tagH + 8;
+
+      // Image cards — thin architectural outline, no fill
+      function clone(src){
+        const c = src.cloneNode(true);
+        c.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+        c.removeAttribute('style');
+        return c;
+      }
+      function drawImageCard(x, w, h, srcSvg, imgW, imgH){
+        out.appendChild(mkRect(x, y, w, h, null, {r:0, stroke: KAMI.stone, sw:0.4, noFill:true}));
+        const iy = y + (h - imgH) / 2;
+        const c = clone(srcSvg);
+        c.setAttribute('x', x + CARD_PAD);
+        c.setAttribute('y', iy);
+        c.setAttribute('width', imgW);
+        c.setAttribute('height', imgH);
+        c.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        out.appendChild(c);
+      }
+      drawImageCard(leftX, leftCardW, cardH, planSvg, planRenderW, planRenderH);
+      drawImageCard(rightX, rightCardW, cardH, tileSvg, tileRenderW, tileRenderH);
+      y += cardH + 16;
+
+      // Footer removed — date already in header right-aligned meta.
+
+      // ===== Page 1 download (layout) =====
       const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(out);
       const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
-      downloadBlob(blob, exportFilename('svg'));
+      downloadBlob(blob, exportFilename('svg', '01_layout'));
+
+      // ===== Page 2: unfolded only =====
+      const p2_innerW = totalW - PAD * 2;
+      const p2_imgW = p2_innerW - CARD_PAD * 2;
+      const p2_imgH = ufh * (p2_imgW / ufw);
+      const p2_cardH = p2_imgH + CARD_PAD * 2;
+      const p2_totalH = PAD * 2 + tagH + 8 + p2_cardH;
+
+      const out2 = document.createElementNS(ns, 'svg');
+      out2.setAttribute('xmlns', ns);
+      out2.setAttribute('width', totalW);
+      out2.setAttribute('height', p2_totalH);
+      out2.setAttribute('viewBox', `0 0 ${totalW} ${p2_totalH}`);
+
+      const styleEl2 = document.createElementNS(ns, 'style');
+      styleEl2.textContent = css;
+      out2.appendChild(styleEl2);
+
+      const bg2 = document.createElementNS(ns, 'rect');
+      bg2.setAttribute('x', 0); bg2.setAttribute('y', 0);
+      bg2.setAttribute('width', totalW); bg2.setAttribute('height', p2_totalH);
+      bg2.setAttribute('fill', KAMI.parchment);
+      out2.appendChild(bg2);
+
+      // tag A-03
+      let p2y = PAD;
+      const t2_w = 'A-03 · UNFOLDED · 紙盒展開'.length * 5.4 + 16;
+      const t2_rect = document.createElementNS(ns, 'rect');
+      t2_rect.setAttribute('x', PAD); t2_rect.setAttribute('y', p2y);
+      t2_rect.setAttribute('width', t2_w); t2_rect.setAttribute('height', tagH);
+      t2_rect.setAttribute('fill', 'none');
+      t2_rect.setAttribute('stroke', KAMI.stone); t2_rect.setAttribute('stroke-width', 0.4);
+      out2.appendChild(t2_rect);
+      const t2 = document.createElementNS(ns, 'text');
+      t2.setAttribute('x', PAD + 8); t2.setAttribute('y', p2y + 15);
+      t2.setAttribute('font-family', KAMI.mono);
+      t2.setAttribute('font-size', 9);
+      const t2Num = document.createElementNS(ns, 'tspan');
+      t2Num.setAttribute('font-weight', 600); t2Num.setAttribute('fill', KAMI.brand);
+      t2Num.textContent = 'A-03';
+      const t2Name = document.createElementNS(ns, 'tspan');
+      t2Name.setAttribute('font-weight', 500); t2Name.setAttribute('fill', KAMI.darkWarm);
+      t2Name.textContent = ' · UNFOLDED · 紙盒展開';
+      t2.appendChild(t2Num); t2.appendChild(t2Name);
+      out2.appendChild(t2);
+      p2y += tagH + 8;
+
+      // image card
+      const card2 = document.createElementNS(ns, 'rect');
+      card2.setAttribute('x', PAD); card2.setAttribute('y', p2y);
+      card2.setAttribute('width', p2_innerW); card2.setAttribute('height', p2_cardH);
+      card2.setAttribute('fill', 'none');
+      card2.setAttribute('stroke', KAMI.stone); card2.setAttribute('stroke-width', 0.4);
+      out2.appendChild(card2);
+
+      const ufClone = unfoldedSvg.cloneNode(true);
+      ufClone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+      ufClone.removeAttribute('style');
+      ufClone.setAttribute('x', PAD + CARD_PAD);
+      ufClone.setAttribute('y', p2y + CARD_PAD);
+      ufClone.setAttribute('width', p2_imgW);
+      ufClone.setAttribute('height', p2_imgH);
+      ufClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      out2.appendChild(ufClone);
+
+      const xml2 = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(out2);
+      const blob2 = new Blob([xml2], {type: 'image/svg+xml;charset=utf-8'});
+      downloadBlob(blob2, exportFilename('svg', '02_unfolded'));
     });
   } catch(e){
     alert('匯出 SVG 失敗:' + (e.message || e));
@@ -2790,53 +3484,81 @@ async function exportPDF(){
   const oldText = btn ? btn.textContent : '';
   if(btn){ btn.textContent = '準備中…'; btn.disabled = true; }
   let container = null;
+  const oldTitle = document.title;
+  // Browsers seed the print dialog's filename from document.title — sync with exportFilename.
+  document.title = exportFilename('').replace(/\.$/, '');
   try {
-    await withForcedLightTheme(async () => {
+    await withExportContext(async () => {
       const r = state.room;
       const t = state.tiles;
-      const tileMode = (typeof VIEW_KEY !== 'undefined' && localStorage.getItem(VIEW_KEY)) || 'walls';
-      const tileSrc = tileMode === 'unfolded' ? $('tile-unfolded') : $('tile-walls');
       const planSrc = $('canvas');
+      const wallsSrc = $('tile-walls');
+      const unfoldedSrc = $('tile-unfolded');
 
-      // Build print container
       container = document.createElement('div');
       container.id = 'print-area';
       const ts = new Date().toLocaleString('zh-TW');
-      container.innerHTML = `
+      const stats = getExportStatsData();
+      const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const cellHtml = c => `<div class="cell"><div class="lbl">${esc(c.label)}</div><div class="val">${esc(c.value)}<span class="unit">${esc(c.unit)}</span></div></div>`;
+      const rowCells = row => `${cellHtml(row.full)}${cellHtml(row.cut)}${cellHtml(row.buy)}${cellHtml(row.area)}`;
+      const proj = getProjectInfo();
+      const specHtml = `房間 ${r.length}×${r.width} cm · 牆高 ${r.wallHeight} cm · 安裝高 ${r.installHeight} cm　|　牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)} mm · 地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)} mm · 縫 ${t.groutMm} mm`;
+      const projHtml = (proj.name || proj.addr)
+        ? `<p class="proj-line">${proj.name ? `<span class="proj-name">${esc(proj.name)}</span>` : ''}${proj.name && proj.addr ? '<span class="sep"> · </span>' : ''}${proj.addr ? `<span class="proj-addr">${esc(proj.addr)}</span>` : ''}</p>`
+        : '';
+      const headerHtml = `
         <div class="print-header">
-          <h1>浴室磁磚計畫</h1>
-          <p>房間 ${r.length}×${r.width}cm　牆高 ${r.wallHeight}cm　安裝高 ${r.installHeight}cm</p>
-          <p>牆磚 ${cmToMm(t.wallW)}×${cmToMm(t.wallH)}mm　地磚 ${cmToMm(t.floorW)}×${cmToMm(t.floorH)}mm　縫 ${t.groutMm}mm</p>
-          <p class="print-meta">${ts}</p>
-        </div>
-        <div class="print-body">
-          <div class="print-section">
-            <h2>平面圖</h2>
+          <div class="title-wrap">
+            <h1>浴室磁磚計畫</h1>
+            <p class="subtitle">${esc(proj.sub || 'Tile Layout')}</p>
+            ${projHtml}
+            <p class="spec">${specHtml}</p>
           </div>
-          <div class="print-section">
-            <h2>${tileMode === 'unfolded' ? '紙盒展開' : '牆面磁磚'}</h2>
+          <p class="print-meta">${esc(ts)}</p>
+        </div>
+        <hr class="kami-rule">`;
+      const footerHtml = '';
+
+      container.innerHTML = `
+        <div class="print-page">
+          ${headerHtml}
+          <div class="print-metrics">
+            <div class="row-label">牆面磁磚</div>
+            ${rowCells(stats.wall)}
+            <div class="row-label">地板磁磚</div>
+            ${rowCells(stats.floor)}
+          </div>
+          <div class="print-body">
+            <div class="print-section" data-slot="plan-1">
+              <span class="tag"><span class="num">A-01</span> · Plan · 平面圖</span>
+            </div>
+            <div class="print-section" data-slot="walls">
+              <span class="tag"><span class="num">A-02</span> · Wall Tiles · 牆面磁磚</span>
+            </div>
+          </div>
+          ${footerHtml}
+        </div>
+        <div class="print-page print-page--full">
+          <div class="print-body">
+            <div class="print-section" data-slot="unfolded">
+              <span class="tag"><span class="num">A-03</span> · Unfolded · 紙盒展開</span>
+            </div>
           </div>
         </div>
       `;
 
-      // Clone source SVGs (cloneNode keeps viewBox & all current rendered children)
-      const planClone = planSrc.cloneNode(true);
-      const tileClone = tileSrc.cloneNode(true);
-
-      // Strip foreignObject (edit UI; not part of layout)
-      planClone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
-      tileClone.querySelectorAll('foreignObject').forEach(fo => fo.remove());
-
-      // Reset display style on clones (in case the source has display:none)
-      planClone.removeAttribute('style');
-      tileClone.removeAttribute('style');
-      // Use 100% width so the @media print rule sizes them to page
-      planClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-      tileClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-      const sections = container.querySelectorAll('.print-section');
-      sections[0].appendChild(planClone);
-      sections[1].appendChild(tileClone);
+      // Clone source SVGs (need 2× plan, 1× walls, 1× unfolded)
+      const cloneClean = src => {
+        const c = src.cloneNode(true);
+        c.querySelectorAll('foreignObject').forEach(fo => fo.remove());
+        c.removeAttribute('style');
+        c.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        return c;
+      };
+      container.querySelector('[data-slot="plan-1"]').appendChild(cloneClean(planSrc));
+      container.querySelector('[data-slot="walls"]').appendChild(cloneClean(wallsSrc));
+      container.querySelector('[data-slot="unfolded"]').appendChild(cloneClean(unfoldedSrc));
 
       document.body.appendChild(container);
 
@@ -2862,6 +3584,7 @@ async function exportPDF(){
   } finally {
     if(container) container.remove();
     if(btn){ btn.textContent = oldText; btn.disabled = false; }
+    document.title = oldTitle;
   }
 }
 
