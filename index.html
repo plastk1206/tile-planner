@@ -251,6 +251,11 @@ html[data-theme="dark"] #tile-unfolded{--uf-wall-fill:rgba(100,140,200,0.30);--u
 .fbond-ctrl .axis-lbl{font-size:11px;color:var(--muted);font-weight:700}
 .fbond-select{height:26px;padding:0 6px;font-size:12px;border:.5px solid var(--border2);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer;font-weight:500}
 .unit-mm{font-size:10px;color:var(--muted);margin-left:2px;font-weight:500}
+.tile-rot{margin-left:6px;width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--fg);border:.5px solid var(--border2);border-radius:6px;cursor:pointer;vertical-align:middle;transition:background .12s,border-color .12s}
+.tile-rot:hover{background:var(--bg2);border-color:var(--info)}
+.tile-rot:active{background:var(--info-bg);color:var(--info)}
+.tile-rot svg{display:block;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.tile-rot.spin svg{transform:rotate(-90deg)}
 .fbond-select:focus{outline:none;border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
 #canvas .plan-tile{fill:rgba(127,127,127,0.04);stroke:rgba(0,0,0,0.18);stroke-width:0.5;pointer-events:none}
 #canvas .plan-tile.cut{fill:rgba(60,140,255,0.08);stroke:rgba(60,140,255,0.5);stroke-dasharray:1.5,1;stroke-width:0.6}
@@ -376,8 +381,8 @@ input[type=file]{display:none}
   </div>
   <div class="grp">
     <span class="grp-lbl">磁磚</span>
-    <label>牆 <input id="tww" type="number" inputmode="numeric" value="600"/><span class="x">×</span><input id="twh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span></label>
-    <label>地 <input id="tfw" type="number" inputmode="numeric" value="300"/><span class="x">×</span><input id="tfh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span></label>
+    <label>牆 <input id="tww" type="number" inputmode="numeric" value="600"/><span class="x">×</span><input id="twh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span><button type="button" class="tile-rot" id="rot-wall" title="長寬對調 (旋轉 90°)" aria-label="牆磚長寬對調"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.5a5.5 5.5 0 0 1 9.4-3.9l1.6 1.6V3a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-.75.75H10.25a.75.75 0 0 1 0-1.5h2.19l-1.6-1.6A4 4 0 0 0 4 7.5a.75.75 0 0 1-1.5 0Z" fill="currentColor"/><path d="M13.5 8.5a5.5 5.5 0 0 1-9.4 3.9L2.5 10.8V13a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75H5.75a.75.75 0 0 1 0 1.5H3.56l1.6 1.6A4 4 0 0 0 12 8.5a.75.75 0 0 1 1.5 0Z" fill="currentColor"/></svg></button></label>
+    <label>地 <input id="tfw" type="number" inputmode="numeric" value="300"/><span class="x">×</span><input id="tfh" type="number" inputmode="numeric" value="300"/><span class="unit-mm">mm</span><button type="button" class="tile-rot" id="rot-floor" title="長寬對調 (旋轉 90°)" aria-label="地磚長寬對調"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2.5 7.5a5.5 5.5 0 0 1 9.4-3.9l1.6 1.6V3a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-.75.75H10.25a.75.75 0 0 1 0-1.5h2.19l-1.6-1.6A4 4 0 0 0 4 7.5a.75.75 0 0 1-1.5 0Z" fill="currentColor"/><path d="M13.5 8.5a5.5 5.5 0 0 1-9.4 3.9L2.5 10.8V13a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75H5.75a.75.75 0 0 1 0 1.5H3.56l1.6 1.6A4 4 0 0 0 12 8.5a.75.75 0 0 1 1.5 0Z" fill="currentColor"/></svg></button></label>
     <label>縫 <input id="grt" type="number" inputmode="numeric" value="3" step="0.5"/><span class="unit">mm</span></label>
   </div>
 </div>
@@ -2516,6 +2521,18 @@ function readSettings(){
 ['rl','rw','rh','ih','tww','twh','tfw','tfh','grt'].forEach(id=>{
   $(id).addEventListener('input', readSettings);
 });
+
+// Swap tile dimensions (W ↔ H) — same effect as rotating the tile 90°
+function swapTileDims(wId, hId, btn){
+  const w = $(wId), h = $(hId);
+  const tmp = w.value;
+  w.value = h.value;
+  h.value = tmp;
+  if(btn){ btn.classList.toggle('spin'); }
+  readSettings();
+}
+$('rot-wall').addEventListener('click', e => swapTileDims('tww','twh', e.currentTarget));
+$('rot-floor').addEventListener('click', e => swapTileDims('tfw','tfh', e.currentTarget));
 
 // ===== Add-mode buttons =====
 $('add-d90').onclick=()=>{ if(state.mode==='addOp'&&pendingOp.width===90)exitMode(); else enterAddOp('door',90,200,0,'add-d90'); };
